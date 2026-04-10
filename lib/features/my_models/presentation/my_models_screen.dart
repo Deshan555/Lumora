@@ -9,6 +9,7 @@ import '../../../core/di/state_providers.dart';
 import '../../../core/di/repository_providers.dart';
 import '../../../core/theme/edge_theme.dart';
 import '../../../core/utils/checksum_utils.dart';
+import '../../../core/utils/model_metadata_extractor.dart';
 import '../../../data/datasources/external_model_storage.dart';
 
 /// My Models screen - shows downloaded/imported models ready to use
@@ -46,7 +47,16 @@ class _MyModelsScreenState extends ConsumerState<MyModelsScreen> {
     final models = files.map((file) {
       final filename = file.uri.pathSegments.last;
       final catalogModel = catalogMap[filename.toLowerCase()];
-      
+
+      // Detect runtime based on file extension
+      LlmRuntime detectedRuntime = LlmRuntime.llamaCpp;
+      try {
+        detectedRuntime = ModelMetadataExtractor.detectRuntime(file.path);
+      } catch (e) {
+        // Fallback to catalog model runtime or default
+        detectedRuntime = catalogModel?.runtime ?? LlmRuntime.llamaCpp;
+      }
+
       return ModelInfo(
         id: filename.split('.').first.toLowerCase().replaceAll(' ', '_'),
         name: catalogModel?.name ?? _getNameFromFilename(filename),
@@ -61,6 +71,7 @@ class _MyModelsScreenState extends ConsumerState<MyModelsScreen> {
         downloadedAt: file.lastModifiedSync(),
         contextWindow: catalogModel?.contextWindow ?? 2048,
         tags: catalogModel?.tags ?? 'imported',
+        runtime: catalogModel?.runtime ?? detectedRuntime,
       );
     }).toList();
     
