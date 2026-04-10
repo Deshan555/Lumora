@@ -7,12 +7,13 @@ plugins {
 
 android {
     namespace = "com.deskdemon.copilot.grammer_llm"
-    compileSdk = 35
-    ndkVersion = "27.0.12077973" // LTS version compatible with llama.cpp
+    compileSdk = 36
+    ndkVersion = "28.2.13676358" // Required by speech_to_text and LLM compat
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -31,10 +32,7 @@ android {
         // Enable large heap for LLM model loading
         multiDexEnabled = true
         
-        // NDK configuration for llama.cpp
-        ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
-        }
+        // NDK configuration handled automatically by flutter for splits
     }
 
     buildTypes {
@@ -65,4 +63,8 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
