@@ -20,7 +20,7 @@ class StoragePaths {
   static const String modelExtension = '.gguf';
   
   // Supported model extensions
-  static const List<String> supportedExtensions = ['.gguf', '.bin'];
+  static const List<String> supportedExtensions = ['.gguf', '.bin', '.litertlm', '.task'];
   
   // Database path (internal storage - deleted on uninstall)
   static const String databaseName = 'grammar_ai.db';
