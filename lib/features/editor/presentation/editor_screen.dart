@@ -116,10 +116,12 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       if (['txt', 'md', 'csv'].contains(ext)) {
         try {
           final text = file.readAsStringSync();
-          sb.write('\n\nFile "${file.uri.pathSegments.last}":\n${text.substring(0, text.length.clamp(0, 1500))}');
+          sb.write(
+              '\n\nFile "${file.uri.pathSegments.last}":\n${text.substring(0, text.length.clamp(0, 1500))}');
         } catch (_) {}
       } else if (ext == 'pdf') {
-        sb.write('\n\n[PDF attached: ${file.uri.pathSegments.last}] — describe its contents if possible.');
+        sb.write(
+            '\n\n[PDF attached: ${file.uri.pathSegments.last}] — describe its contents if possible.');
       } else {
         // Image
         sb.write('\n\n[IMAGE attached: ${file.uri.pathSegments.last}]');
@@ -138,8 +140,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     final correctionRepo = ref.read(correctionRepositoryProvider);
 
     if (activeModel == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Model not active. Please select a model first.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Model not active. Please select a model first.')));
       return;
     }
 
@@ -164,9 +166,13 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     try {
       if (activeModel.hfTaskId == 'text-to-image') {
         setState(() {
-          _messages.add(ChatMessage(content: 'Generating image...', isUser: false, timestamp: DateTime.now()));
+          _messages.add(ChatMessage(
+              content: 'Generating image...',
+              isUser: false,
+              timestamp: DateTime.now()));
         });
-        final imageBytes = await correctionRepo.generateImage(activeModel.id, text);
+        final imageBytes =
+            await correctionRepo.generateImage(activeModel.id, text);
         final directory = await getApplicationDocumentsDirectory();
         final fileName = 'gen_${DateTime.now().millisecondsSinceEpoch}.png';
         final file = File('${directory.path}/$fileName');
@@ -188,39 +194,52 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       } else {
         String aiResponse = '';
         setState(() {
-          _messages.add(ChatMessage(content: '', isUser: false, timestamp: DateTime.now()));
+          _messages.add(ChatMessage(
+              content: '', isUser: false, timestamp: DateTime.now()));
         });
-        
+
         final rawMessage = text + _buildAttachmentContext();
         final history = _buildHistory();
-        
+
         final imagePaths = attachments.where((p) {
           final ext = p.split('.').last.toLowerCase();
           return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].contains(ext);
         }).toList();
 
-        await for (final token in correctionRepo.correctTextStream(rawMessage, history, imagePaths: imagePaths)) {
+        await for (final token in correctionRepo
+            .correctTextStream(rawMessage, history, imagePaths: imagePaths)) {
           if (mounted) {
             setState(() {
               aiResponse += token;
-              _messages.last = ChatMessage(content: aiResponse, isUser: false, timestamp: DateTime.now());
+              _messages.last = ChatMessage(
+                  content: aiResponse,
+                  isUser: false,
+                  timestamp: DateTime.now());
             });
             _scrollToBottom();
           }
         }
         final historyRepo = ref.read(historyRepositoryProvider);
-        await historyRepo.saveHistory(originalText: text, correctedText: aiResponse, explanation: [], style: 'Chat');
+        await historyRepo.saveHistory(
+            originalText: text,
+            correctedText: aiResponse,
+            explanation: [],
+            style: 'Chat');
         await _sendCompletionNotification(aiResponse);
         if (mounted) setState(() => _isResponding = false);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isResponding = false);
-        final errorMessage = e.toString()
+        final errorMessage = e
+            .toString()
             .replaceFirst('Exception: ', '')
             .replaceFirst('Hugging Face API: ', '');
         if (_messages.isNotEmpty) {
-          _messages.last = ChatMessage(content: '⚠️ $errorMessage', isUser: false, timestamp: DateTime.now());
+          _messages.last = ChatMessage(
+              content: '⚠️ $errorMessage',
+              isUser: false,
+              timestamp: DateTime.now());
         }
       }
     }
@@ -232,7 +251,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     final success = await WallpaperService.setWallpaper(path);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(success ? 'Wallpaper set successfully!' : 'Failed to set wallpaper.'),
+        content: Text(success
+            ? 'Wallpaper set successfully!'
+            : 'Failed to set wallpaper.'),
         backgroundColor: success ? EdgeTheme.successGreen : EdgeTheme.errorRed,
       ));
     }
@@ -243,15 +264,21 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(color: EdgeTheme.surfaceColor, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+        decoration: const BoxDecoration(
+            color: EdgeTheme.surfaceColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
         padding: const EdgeInsets.symmetric(vertical: 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildActionTile(FontAwesomeIcons.image, 'Set as Wallpaper', () => _setWallpaper(path)),
-            _buildActionTile(FontAwesomeIcons.download, 'Save to Gallery', () => _saveToGallery(path)),
-            _buildActionTile(FontAwesomeIcons.floppyDisk, 'Save to Creations', () => _saveAsCreation(path, index)),
-            _buildActionTile(FontAwesomeIcons.shareNodes, 'Share Image', () => Share.shareXFiles([XFile(path)])),
+            _buildActionTile(FontAwesomeIcons.image, 'Set as Wallpaper',
+                () => _setWallpaper(path)),
+            _buildActionTile(FontAwesomeIcons.download, 'Save to Gallery',
+                () => _saveToGallery(path)),
+            _buildActionTile(FontAwesomeIcons.floppyDisk, 'Save to Creations',
+                () => _saveAsCreation(path, index)),
+            _buildActionTile(FontAwesomeIcons.shareNodes, 'Share Image',
+                () => Share.shareXFiles([XFile(path)])),
           ],
         ),
       ),
@@ -262,7 +289,10 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     return ListTile(
       leading: FaIcon(icon, color: EdgeTheme.lavender, size: 20),
       title: Text(title, style: const TextStyle(color: Colors.white)),
-      onTap: () { Navigator.pop(context); onTap(); },
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
@@ -279,13 +309,17 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildToolButton(FontAwesomeIcons.image, () => _setWallpaper(path), 'Set Wallpaper'),
+          _buildToolButton(FontAwesomeIcons.image, () => _setWallpaper(path),
+              'Set Wallpaper'),
           _buildToolDivider(),
-          _buildToolButton(FontAwesomeIcons.download, () => _saveToGallery(path), 'Export'),
+          _buildToolButton(
+              FontAwesomeIcons.download, () => _saveToGallery(path), 'Export'),
           _buildToolDivider(),
-          _buildToolButton(FontAwesomeIcons.floppyDisk, () => _saveAsCreation(path, index), 'Save to Creations'),
+          _buildToolButton(FontAwesomeIcons.floppyDisk,
+              () => _saveAsCreation(path, index), 'Save to Creations'),
           _buildToolDivider(),
-          _buildToolButton(FontAwesomeIcons.shareNodes, () => Share.shareXFiles([XFile(path)]), 'Share'),
+          _buildToolButton(FontAwesomeIcons.shareNodes,
+              () => Share.shareXFiles([XFile(path)]), 'Share'),
         ],
       ),
     );
@@ -299,13 +333,18 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         borderRadius: BorderRadius.circular(10),
         child: Padding(
           padding: const EdgeInsets.all(10.0),
-          child: FaIcon(icon, color: EdgeTheme.lavender.withValues(alpha: 0.9), size: 15),
+          child: FaIcon(icon,
+              color: EdgeTheme.lavender.withValues(alpha: 0.9), size: 15),
         ),
       ),
     );
   }
 
-  Widget _buildToolDivider() => Container(height: 16, width: 1, margin: const EdgeInsets.symmetric(horizontal: 4), color: Colors.white10);
+  Widget _buildToolDivider() => Container(
+      height: 16,
+      width: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: Colors.white10);
 
   Future<void> _saveAsCreation(String path, int index) async {
     try {
@@ -317,29 +356,45 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         prompt: prompt.length > 50 ? '${prompt.substring(0, 47)}...' : prompt,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved to your Creations!'), backgroundColor: EdgeTheme.successGreen));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Saved to your Creations!'),
+            backgroundColor: EdgeTheme.successGreen));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: EdgeTheme.errorRed));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Error: $e'), backgroundColor: EdgeTheme.errorRed));
     }
   }
 
   Future<void> _saveToGallery(String path) async {
     try {
       await ImageService.saveToGallery(path);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Image saved to gallery')));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Image saved to gallery')));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
   Future<void> _saveAsArtifact(String code, String? language) async {
     try {
       final repository = ref.read(savedDataRepositoryProvider);
-      await repository.saveArtifact(code: code, title: 'Snippet from ${DateTime.now().toString().split('.')[0]}', language: language ?? 'text');
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved to your Artifacts!'), backgroundColor: EdgeTheme.successGreen));
+      await repository.saveArtifact(
+          code: code,
+          title: 'Snippet from ${DateTime.now().toString().split('.')[0]}',
+          language: language ?? 'text');
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Saved to your Artifacts!'),
+            backgroundColor: EdgeTheme.successGreen));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: EdgeTheme.errorRed));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Error: $e'), backgroundColor: EdgeTheme.errorRed));
     }
   }
 
@@ -350,7 +405,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       String summary = content.trim();
       if (summary.length > 50) summary = '${summary.substring(0, 47)}...';
       await NotificationService.showResponseNotification(summary: summary);
-    } catch (e) { debugPrint('Notification Error: $e'); }
+    } catch (e) {
+      debugPrint('Notification Error: $e');
+    }
   }
 
   Future<void> _speakText(String text) async {
@@ -364,9 +421,13 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   }
 
   String _buildHistory() {
-    final recentMessages = _messages.length > 8 ? _messages.sublist(_messages.length - 8) : _messages;
+    final recentMessages = _messages.length > 8
+        ? _messages.sublist(_messages.length - 8)
+        : _messages;
     if (recentMessages.isEmpty) return '';
-    return recentMessages.map((m) => '${m.isUser ? "User" : "Assistant"}: ${m.content}').join('\n\n');
+    return recentMessages
+        .map((m) => '${m.isUser ? "User" : "Assistant"}: ${m.content}')
+        .join('\n\n');
   }
 
   void _toggleVoiceInput() async {
@@ -382,7 +443,10 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     } else {
       final available = await VoiceInputService.initialize();
       if (!available) return;
-      setState(() { _isListening = true; _partialVoiceText = ''; });
+      setState(() {
+        _isListening = true;
+        _partialVoiceText = '';
+      });
       VoiceInputService.startListening(onResult: (words) {
         if (mounted) setState(() => _partialVoiceText = words);
       });
@@ -390,11 +454,14 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   }
 
   void _goLive() {
-    Navigator.push(context, PageRouteBuilder(
-      pageBuilder: (_, __, ___) => const LiveChatScreen(),
-      transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
-      transitionDuration: const Duration(milliseconds: 600),
-    ));
+    Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const LiveChatScreen(),
+          transitionsBuilder: (_, anim, __, child) =>
+              FadeTransition(opacity: anim, child: child),
+          transitionDuration: const Duration(milliseconds: 600),
+        ));
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -415,7 +482,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
             children: [
               SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   child: Row(
                     children: [
                       Column(
@@ -423,44 +491,72 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         children: [
                           Row(
                             children: [
-                              const FaIcon(FontAwesomeIcons.robot, color: EdgeTheme.lavender, size: 12),
+                              const FaIcon(FontAwesomeIcons.robot,
+                                  color: EdgeTheme.lavender, size: 12),
                               const SizedBox(width: 8),
                               Text('BRAINY.AI',
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: EdgeTheme.lavender,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 2,
-                                  )),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        color: EdgeTheme.lavender,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 2,
+                                      )),
                               const SizedBox(width: 8),
-                              Container(width: 4, height: 4, decoration: const BoxDecoration(color: EdgeTheme.textTertiary, shape: BoxShape.circle)),
+                              Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: const BoxDecoration(
+                                      color: EdgeTheme.textTertiary,
+                                      shape: BoxShape.circle)),
                               const SizedBox(width: 8),
                               Text(personality.displayName.toUpperCase(),
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: EdgeTheme.textSecondary,
-                                    fontWeight: FontWeight.w700,
-                                  )),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        color: EdgeTheme.textSecondary,
+                                        fontWeight: FontWeight.w700,
+                                      )),
                             ],
                           ),
                           const SizedBox(height: 4),
                           Row(
                             children: [
                               Container(
-                                width: 8, height: 8,
+                                width: 8,
+                                height: 8,
                                 decoration: BoxDecoration(
-                                  color: _isResponding ? EdgeTheme.lavender : (isModelLoaded ? EdgeTheme.successGreen : Colors.white24),
+                                  color: _isResponding
+                                      ? EdgeTheme.lavender
+                                      : (isModelLoaded
+                                          ? EdgeTheme.successGreen
+                                          : Colors.white24),
                                   shape: BoxShape.circle,
-                                  boxShadow: _isResponding ? EdgeTheme.purpleGlow(EdgeTheme.lavender) : [],
+                                  boxShadow: _isResponding
+                                      ? EdgeTheme.purpleGlow(EdgeTheme.lavender)
+                                      : [],
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                _isResponding ? 'RESPONDING...' : (isModelLoaded ? ((activeModel?.isRemote ?? false) ? 'CLOUD CORE ACTIVE' : 'LOCAL CORE ACTIVE') : 'OFFLINE'),
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: EdgeTheme.textTertiary,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.5,
-                                ),
+                                _isResponding
+                                    ? 'RESPONDING...'
+                                    : (isModelLoaded
+                                        ? ((activeModel?.isRemote ?? false)
+                                            ? 'CLOUD CORE ACTIVE'
+                                            : 'LOCAL CORE ACTIVE')
+                                        : 'OFFLINE'),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      color: EdgeTheme.textTertiary,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
                               ),
                             ],
                           ),
@@ -471,33 +567,53 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                       GestureDetector(
                         onTap: _goLive,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 7),
                           margin: const EdgeInsets.only(right: 10),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(colors: [Color(0xFF6C47FF), Color(0xFF00BFFF)]),
+                            gradient: const LinearGradient(
+                                colors: [Color(0xFF6C47FF), Color(0xFF00BFFF)]),
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
-                              BoxShadow(color: EdgeTheme.lavender.withValues(alpha: 0.3), blurRadius: 12),
+                              BoxShadow(
+                                  color:
+                                      EdgeTheme.lavender.withValues(alpha: 0.3),
+                                  blurRadius: 12),
                             ],
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              FaIcon(FontAwesomeIcons.waveSquare, color: Colors.white, size: 10),
+                              FaIcon(FontAwesomeIcons.waveSquare,
+                                  color: Colors.white, size: 10),
                               SizedBox(width: 6),
-                              Text('LIVE', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                              Text('LIVE',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.5)),
                             ],
                           ),
                         ),
                       ),
-                      Builder(builder: (context) => GestureDetector(
-                        onTap: () => Scaffold.of(context).openEndDrawer(),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(color: EdgeTheme.surfaceColor, shape: BoxShape.circle, border: Border.all(color: Colors.white10)),
-                          child: const FaIcon(FontAwesomeIcons.barsStaggered, size: 16, color: Colors.white),
-                        ),
-                      )),
+                      Builder(
+                          builder: (context) => GestureDetector(
+                                onTap: () =>
+                                    Scaffold.of(context).openEndDrawer(),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                      color: EdgeTheme.surfaceColor,
+                                      shape: BoxShape.circle,
+                                      border:
+                                          Border.all(color: Colors.white10)),
+                                  child: const FaIcon(
+                                      FontAwesomeIcons.barsStaggered,
+                                      size: 16,
+                                      color: Colors.white),
+                                ),
+                              )),
                     ],
                   ),
                 ),
@@ -515,23 +631,37 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                               decoration: BoxDecoration(
                                 color: EdgeTheme.surfaceColor,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: EdgeTheme.lavender.withValues(alpha: 0.3)),
-                                boxShadow: EdgeTheme.purpleGlow(EdgeTheme.lavender),
+                                border: Border.all(
+                                    color: EdgeTheme.lavender
+                                        .withValues(alpha: 0.3)),
+                                boxShadow:
+                                    EdgeTheme.purpleGlow(EdgeTheme.lavender),
                               ),
-                              child: FaIcon(personality.avatarIcon, size: 80, color: EdgeTheme.lavender),
+                              child: FaIcon(personality.avatarIcon,
+                                  size: 80, color: EdgeTheme.lavender),
                             ),
                             const SizedBox(height: 24),
-                            Text('How can I help you?', style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w600)),
+                            Text('How can I help you?',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .displaySmall
+                                    ?.copyWith(fontWeight: FontWeight.w600)),
                             const SizedBox(height: 12),
-                            Text('Tap LIVE for hands-free conversation', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: EdgeTheme.textTertiary)),
+                            Text('Tap LIVE for hands-free conversation',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: EdgeTheme.textTertiary)),
                           ],
                         ),
                       )
                     : ListView.builder(
                         controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 20),
                         itemCount: _messages.length,
-                        itemBuilder: (context, index) => _buildMessageBubble(_messages[index], index, personality, activeModel),
+                        itemBuilder: (context, index) => _buildMessageBubble(
+                            _messages[index], index, personality, activeModel),
                       ),
               ),
 
@@ -557,7 +687,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         itemBuilder: (context, i) {
           final path = _pendingAttachments[i];
           final ext = path.split('.').last.toLowerCase();
-          final isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].contains(ext);
+          final isImage =
+              ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].contains(ext);
 
           return Container(
             width: 72,
@@ -565,21 +696,27 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
             decoration: BoxDecoration(
               color: EdgeTheme.surfaceColor,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: EdgeTheme.lavender.withValues(alpha: 0.2)),
+              border:
+                  Border.all(color: EdgeTheme.lavender.withValues(alpha: 0.2)),
             ),
             child: Stack(
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: isImage
-                      ? Image.file(File(path), width: 72, height: 90, fit: BoxFit.cover)
+                      ? Image.file(File(path),
+                          width: 72, height: 90, fit: BoxFit.cover)
                       : Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              FaIcon(_fileIcon(ext), color: EdgeTheme.lavender, size: 22),
+                              FaIcon(_fileIcon(ext),
+                                  color: EdgeTheme.lavender, size: 22),
                               const SizedBox(height: 4),
-                              Text(ext.toUpperCase(), style: const TextStyle(color: EdgeTheme.textTertiary, fontSize: 9)),
+                              Text(ext.toUpperCase(),
+                                  style: const TextStyle(
+                                      color: EdgeTheme.textTertiary,
+                                      fontSize: 9)),
                             ],
                           ),
                         ),
@@ -588,11 +725,14 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                   top: 3,
                   right: 3,
                   child: GestureDetector(
-                    onTap: () => setState(() => _pendingAttachments.removeAt(i)),
+                    onTap: () =>
+                        setState(() => _pendingAttachments.removeAt(i)),
                     child: Container(
                       padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                      child: const Icon(Icons.close, color: Colors.white, size: 10),
+                      decoration: const BoxDecoration(
+                          color: Colors.black54, shape: BoxShape.circle),
+                      child: const Icon(Icons.close,
+                          color: Colors.white, size: 10),
                     ),
                   ),
                 ),
@@ -606,22 +746,30 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
 
   IconData _fileIcon(String ext) {
     switch (ext) {
-      case 'pdf': return FontAwesomeIcons.filePdf;
-      case 'txt': case 'md': return FontAwesomeIcons.fileLines;
-      case 'csv': return FontAwesomeIcons.fileExcel;
-      case 'docx': return FontAwesomeIcons.fileWord;
-      default: return FontAwesomeIcons.file;
+      case 'pdf':
+        return FontAwesomeIcons.filePdf;
+      case 'txt':
+      case 'md':
+        return FontAwesomeIcons.fileLines;
+      case 'csv':
+        return FontAwesomeIcons.fileExcel;
+      case 'docx':
+        return FontAwesomeIcons.fileWord;
+      default:
+        return FontAwesomeIcons.file;
     }
   }
 
   String _cleanAiResponse(String text) {
     if (text.isEmpty) return text;
-    var cleaned = text.replaceAll(RegExp(r'<\|channel>thought.*?<channel\|>', dotAll: true), '');
+    var cleaned = text.replaceAll(
+        RegExp(r'<\|channel>thought.*?<channel\|>', dotAll: true), '');
     final unclosedIndex = cleaned.indexOf('<|channel>thought');
     if (unclosedIndex != -1) {
       cleaned = cleaned.substring(0, unclosedIndex);
     }
-    cleaned = cleaned.replaceAll(RegExp(r'<think>.*?</think>', dotAll: true), '');
+    cleaned =
+        cleaned.replaceAll(RegExp(r'<think>.*?</think>', dotAll: true), '');
     final unclosedThink = cleaned.indexOf('<think>');
     if (unclosedThink != -1) {
       cleaned = cleaned.substring(0, unclosedThink);
@@ -629,22 +777,29 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     return cleaned.trimLeft();
   }
 
-  Widget _buildMessageBubble(ChatMessage message, int index, dynamic personality, ModelInfo? activeModel) {
+  Widget _buildMessageBubble(ChatMessage message, int index,
+      dynamic personality, ModelInfo? activeModel) {
     final isLast = index == _messages.length - 1;
-    final displayContent = message.isUser ? message.content : _cleanAiResponse(message.content);
-    final isLlmThinking = !message.isUser && displayContent.isEmpty && _isResponding && isLast;
+    final displayContent =
+        message.isUser ? message.content : _cleanAiResponse(message.content);
+    final isLlmThinking =
+        !message.isUser && displayContent.isEmpty && _isResponding && isLast;
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Row(
-        mainAxisAlignment: message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!message.isUser) ...[
             Container(
               margin: const EdgeInsets.only(top: 4),
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: EdgeTheme.lavender.withValues(alpha: 0.1), shape: BoxShape.circle),
-              child: FaIcon(personality.avatarIcon, size: 16, color: EdgeTheme.lavender),
+              decoration: BoxDecoration(
+                  color: EdgeTheme.lavender.withValues(alpha: 0.1),
+                  shape: BoxShape.circle),
+              child: FaIcon(personality.avatarIcon,
+                  size: 16, color: EdgeTheme.lavender),
             ),
             const SizedBox(width: 12),
           ],
@@ -664,8 +819,13 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: message.isUser ? EdgeTheme.lavender.withValues(alpha: 0.1) : EdgeTheme.surfaceColor.withValues(alpha: 0.8),
-                      border: Border.all(color: message.isUser ? EdgeTheme.lavender.withValues(alpha: 0.2) : Colors.white10),
+                      color: message.isUser
+                          ? EdgeTheme.lavender.withValues(alpha: 0.1)
+                          : EdgeTheme.surfaceColor.withValues(alpha: 0.8),
+                      border: Border.all(
+                          color: message.isUser
+                              ? EdgeTheme.lavender.withValues(alpha: 0.2)
+                              : Colors.white10),
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(24),
                         topRight: const Radius.circular(24),
@@ -677,25 +837,34 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Attachment preview in bubble
-                        if (message.attachmentPaths != null && message.attachmentPaths!.isNotEmpty)
+                        if (message.attachmentPaths != null &&
+                            message.attachmentPaths!.isNotEmpty)
                           _buildBubbleAttachments(message.attachmentPaths!),
                         if (isLlmThinking)
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 8),
-                            child: NeuralThinkingVisualizer(width: 150, height: 60),
+                            child: NeuralThinkingVisualizer(
+                                width: 150, height: 60),
                           )
                         else if (message.isImage && message.imageUrl != null)
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               GestureDetector(
-                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ImageViewerScreen(imagePath: message.imageUrl!, tag: 'img_$index'))),
-                                onLongPress: () => _showImageActions(message.imageUrl!, index),
+                                onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => ImageViewerScreen(
+                                            imagePath: message.imageUrl!,
+                                            tag: 'img_$index'))),
+                                onLongPress: () =>
+                                    _showImageActions(message.imageUrl!, index),
                                 child: Hero(
                                   tag: 'img_$index',
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(12),
-                                    child: Image.file(File(message.imageUrl!), fit: BoxFit.cover),
+                                    child: Image.file(File(message.imageUrl!),
+                                        fit: BoxFit.cover),
                                   ),
                                 ),
                               ),
@@ -706,34 +875,62 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                           MarkdownBody(
                             data: displayContent,
                             selectable: true,
-                            builders: {'code': CodeElementBuilder(context, _saveAsArtifact)},
+                            builders: {
+                              'code':
+                                  CodeElementBuilder(context, _saveAsArtifact)
+                            },
                             styleSheet: MarkdownStyleSheet(
-                              p: Theme.of(context).textTheme.bodyLarge?.copyWith(color: EdgeTheme.textPrimary, height: 1.6),
-                              code: const TextStyle(backgroundColor: Colors.transparent, color: EdgeTheme.lavender, fontFamily: 'monospace', fontSize: 13),
-                              codeblockDecoration: const BoxDecoration(color: Colors.transparent),
-                              blockquote: const TextStyle(color: EdgeTheme.textSecondary, fontStyle: FontStyle.italic),
-                              listBullet: const TextStyle(color: EdgeTheme.lavender),
+                              p: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(
+                                      color: EdgeTheme.textPrimary,
+                                      height: 1.6),
+                              code: const TextStyle(
+                                  backgroundColor: Colors.transparent,
+                                  color: EdgeTheme.lavender,
+                                  fontFamily: 'monospace',
+                                  fontSize: 13),
+                              codeblockDecoration: const BoxDecoration(
+                                  color: Colors.transparent),
+                              blockquote: const TextStyle(
+                                  color: EdgeTheme.textSecondary,
+                                  fontStyle: FontStyle.italic),
+                              listBullet:
+                                  const TextStyle(color: EdgeTheme.lavender),
                             ),
                           ),
-                        if (!message.isUser && message.content.isNotEmpty && !_isResponding)
+                        if (!message.isUser &&
+                            message.content.isNotEmpty &&
+                            !_isResponding)
                           Padding(
                             padding: const EdgeInsets.only(top: 12),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  icon: const FaIcon(FontAwesomeIcons.volumeHigh, size: 14),
+                                  icon: const FaIcon(
+                                      FontAwesomeIcons.volumeHigh,
+                                      size: 14),
                                   onPressed: () => _speakText(message.content),
-                                  style: IconButton.styleFrom(backgroundColor: Colors.white10, padding: const EdgeInsets.all(8)),
+                                  style: IconButton.styleFrom(
+                                      backgroundColor: Colors.white10,
+                                      padding: const EdgeInsets.all(8)),
                                 ),
                                 const SizedBox(width: 8),
                                 IconButton(
-                                  icon: const FaIcon(FontAwesomeIcons.copy, size: 14),
+                                  icon: const FaIcon(FontAwesomeIcons.copy,
+                                      size: 14),
                                   onPressed: () {
-                                    Clipboard.setData(ClipboardData(text: message.content));
-                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied!')));
+                                    Clipboard.setData(
+                                        ClipboardData(text: message.content));
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                            content: Text('Copied!')));
                                   },
-                                  style: IconButton.styleFrom(backgroundColor: Colors.white10, padding: const EdgeInsets.all(8)),
+                                  style: IconButton.styleFrom(
+                                      backgroundColor: Colors.white10,
+                                      padding: const EdgeInsets.all(8)),
                                 ),
                               ],
                             ),
@@ -769,18 +966,25 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
             height: 80,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              children: images.map((p) => GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ImageViewerScreen(imagePath: p, tag: p))),
-                child: Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  width: 80,
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.file(File(p), fit: BoxFit.cover),
-                  ),
-                ),
-              )).toList(),
+              children: images
+                  .map((p) => GestureDetector(
+                        onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    ImageViewerScreen(imagePath: p, tag: p))),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          width: 80,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10)),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.file(File(p), fit: BoxFit.cover),
+                          ),
+                        ),
+                      ))
+                  .toList(),
             ),
           ),
         ...files.map((p) {
@@ -792,14 +996,19 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
             decoration: BoxDecoration(
               color: Colors.white10,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: EdgeTheme.lavender.withValues(alpha: 0.2)),
+              border:
+                  Border.all(color: EdgeTheme.lavender.withValues(alpha: 0.2)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 FaIcon(_fileIcon(ext), color: EdgeTheme.lavender, size: 14),
                 const SizedBox(width: 8),
-                Flexible(child: Text(name, style: const TextStyle(color: Colors.white70, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                Flexible(
+                    child: Text(name,
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12),
+                        overflow: TextOverflow.ellipsis)),
               ],
             ),
           );
@@ -823,7 +1032,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           children: [
             // Attachment preview chips above input
             if (hasAttachments) _buildAttachmentChips(),
-            
+
             // Input bar
             Container(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
@@ -877,34 +1086,44 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                   // Text input field (center, expands)
                   Expanded(
                     child: Container(
+                      height: 44, // ✅ Match button height
+                      alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: EdgeTheme.secondarySurface,
                         borderRadius: BorderRadius.circular(24),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      constraints: const BoxConstraints(maxHeight: 120),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: TextField(
                         controller: _inputController,
-                        maxLines: null,
-                        minLines: 1,
+                        maxLines: 1, // ✅ Keep height consistent
+                        expands: false,
+                        textAlignVertical: TextAlignVertical
+                            .center, // ✅ Center text vertically
                         textInputAction: TextInputAction.newline,
                         onChanged: (val) {
-                          setState(() {}); // Triggers rebuild to update send button state
+                          setState(() {});
                         },
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
-                          height: 1.3,
+                          height: 1.2,
                         ),
                         decoration: InputDecoration(
                           hintText: activeModel?.hfTaskId == 'text-to-image'
                               ? 'Describe image...'
                               : 'Message',
                           hintStyle: TextStyle(
-                            color: EdgeTheme.textTertiary.withValues(alpha: 0.5),
+                            color:
+                                EdgeTheme.textTertiary.withValues(alpha: 0.5),
                             fontSize: 16,
                           ),
+
+                          // ✅ REMOVE ALL BORDERS (normal + focused)
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+
                           contentPadding: EdgeInsets.zero,
                           isDense: true,
                         ),
@@ -930,7 +1149,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         boxShadow: showSendButton && !_isResponding
                             ? [
                                 BoxShadow(
-                                  color: EdgeTheme.lavender.withValues(alpha: 0.3),
+                                  color:
+                                      EdgeTheme.lavender.withValues(alpha: 0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -979,7 +1199,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
             final path = entry.value;
             final name = path.split('/').last;
             final isImage = _isImageFile(path);
-            
+
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Chip(
@@ -1044,7 +1264,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
 
   Future<void> _pickImageFromGallery() async {
     HapticFeedback.lightImpact();
-    
+
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       allowMultiple: true,
@@ -1060,7 +1280,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       }
     }
   }
-
 }
 
 // ── Code Element Builder ───────────────────────────────────────────────────
@@ -1072,31 +1291,73 @@ class CodeElementBuilder extends MarkdownElementBuilder {
 
   @override
   Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
-    if (element.tag != 'code' || !element.textContent.contains('\n')) return null;
+    if (element.tag != 'code' || !element.textContent.contains('\n'))
+      return null;
     final String code = element.textContent;
-    final String? language = element.attributes['class']?.replaceFirst('language-', '');
+    final String? language =
+        element.attributes['class']?.replaceFirst('language-', '');
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white10)),
+      decoration: BoxDecoration(
+          color: Colors.black45,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: const BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12))),
+            decoration: const BoxDecoration(
+                color: Colors.white10,
+                borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12))),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text((language ?? 'code').toUpperCase(), style: const TextStyle(color: EdgeTheme.lavender, fontSize: 9, fontWeight: FontWeight.bold)),
+                Text((language ?? 'code').toUpperCase(),
+                    style: const TextStyle(
+                        color: EdgeTheme.lavender,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold)),
                 Row(mainAxisSize: MainAxisSize.min, children: [
-                  IconButton(icon: const FaIcon(FontAwesomeIcons.copy, size: 11, color: EdgeTheme.textTertiary), onPressed: () => Clipboard.setData(ClipboardData(text: code)), constraints: const BoxConstraints(), padding: const EdgeInsets.all(6)),
-                  IconButton(icon: const FaIcon(FontAwesomeIcons.floppyDisk, size: 11, color: EdgeTheme.lavender), onPressed: () => onSave(code, language), constraints: const BoxConstraints(), padding: const EdgeInsets.all(6)),
-                  if (language == 'html' || language == 'javascript') IconButton(icon: const FaIcon(FontAwesomeIcons.play, size: 10, color: EdgeTheme.successGreen), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CodePreviewScreen(code: code, language: language ?? 'text'))), constraints: const BoxConstraints(), padding: const EdgeInsets.all(6)),
+                  IconButton(
+                      icon: const FaIcon(FontAwesomeIcons.copy,
+                          size: 11, color: EdgeTheme.textTertiary),
+                      onPressed: () =>
+                          Clipboard.setData(ClipboardData(text: code)),
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(6)),
+                  IconButton(
+                      icon: const FaIcon(FontAwesomeIcons.floppyDisk,
+                          size: 11, color: EdgeTheme.lavender),
+                      onPressed: () => onSave(code, language),
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(6)),
+                  if (language == 'html' || language == 'javascript')
+                    IconButton(
+                        icon: const FaIcon(FontAwesomeIcons.play,
+                            size: 10, color: EdgeTheme.successGreen),
+                        onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => CodePreviewScreen(
+                                    code: code, language: language ?? 'text'))),
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(6)),
                 ]),
               ],
             ),
           ),
-          Padding(padding: const EdgeInsets.all(14), child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Text(code, style: const TextStyle(color: EdgeTheme.textPrimary, fontFamily: 'monospace', fontSize: 12)))),
+          Padding(
+              padding: const EdgeInsets.all(14),
+              child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Text(code,
+                      style: const TextStyle(
+                          color: EdgeTheme.textPrimary,
+                          fontFamily: 'monospace',
+                          fontSize: 12)))),
         ],
       ),
     );
@@ -1127,7 +1388,11 @@ class GlowingBorder extends StatelessWidget {
   final Widget child;
   final double borderRadius;
   final bool isActive;
-  const GlowingBorder({super.key, required this.child, this.borderRadius = 0, this.isActive = false});
+  const GlowingBorder(
+      {super.key,
+      required this.child,
+      this.borderRadius = 0,
+      this.isActive = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1135,7 +1400,12 @@ class GlowingBorder extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
-        boxShadow: [BoxShadow(color: EdgeTheme.lavender.withValues(alpha: 0.2), blurRadius: 10, spreadRadius: 2)],
+        boxShadow: [
+          BoxShadow(
+              color: EdgeTheme.lavender.withValues(alpha: 0.2),
+              blurRadius: 10,
+              spreadRadius: 2)
+        ],
       ),
       child: child,
     );
