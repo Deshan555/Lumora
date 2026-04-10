@@ -1,7 +1,5 @@
 import 'dart:io';
 import '../../domain/entities/model_info.dart';
-import '../../data/datasources/llama_cpp_engine.dart';
-import '../../data/datasources/litert_engine.dart';
 
 /// Model metadata extracted from file
 class ExtractedModelMetadata {
@@ -119,34 +117,35 @@ class ModelMetadataExtractor {
     int fileSize,
   ) async {
     try {
-      final metadata = await LlamaCppEngine.extractMetadata(modelPath);
-      
-      if (metadata == null) {
-        return ExtractedModelMetadata(
-          architecture: 'unknown',
-          parameterCount: 0,
-          quantizationType: 'unknown',
-          contextLength: 0,
-          recommendedContext: 2048,
-          fileSize: fileSize,
-          format: 'GGUF',
-          isValid: false,
-          error: 'Failed to read GGUF metadata',
-        );
+      // GGUF metadata extraction is not directly available in the current engine
+      // We'll use filename-based inference as a fallback
+      final filename = modelPath.split('/').last.toLowerCase();
+
+      String architecture = 'unknown';
+      if (filename.contains('gemma')) {
+        architecture = 'gemma';
+      } else if (filename.contains('llama') || filename.contains('tinyllama')) {
+        architecture = 'llama';
+      } else if (filename.contains('phi')) {
+        architecture = 'phi';
+      } else if (filename.contains('qwen')) {
+        architecture = 'qwen';
+      } else if (filename.contains('mistral')) {
+        architecture = 'mistral';
+      } else if (filename.contains('starcoder')) {
+        architecture = 'starcoder';
       }
 
-      // Extract values from metadata
-      final architecture = metadata.architecture ?? 'unknown';
-      final parameterCount = metadata.parameterCount ?? 0;
-      final quantizationType = metadata.quantizationType ?? 'unknown';
-      final contextLength = metadata.contextLength ?? 0;
+      // Estimate parameters based on file size (rough estimation for Q4 quantization)
+      final bytesPerParam = 0.8; // Average for Q4 quantization
+      final parameterCount = (fileSize / bytesPerParam).round();
 
       return ExtractedModelMetadata(
         architecture: architecture,
         parameterCount: parameterCount,
-        quantizationType: quantizationType,
-        contextLength: contextLength,
-        recommendedContext: contextLength > 0 ? contextLength : 2048,
+        quantizationType: 'GGUF',
+        contextLength: 0,
+        recommendedContext: 4096,
         fileSize: fileSize,
         format: 'GGUF',
         isValid: true,
@@ -319,7 +318,7 @@ class ModelMetadataExtractor {
   }
 
   /// Get recommended configuration for a model
-  static ModelRecommendation getRecommendation(String modelPath) async {
+  static Future<ModelRecommendation> getRecommendation(String modelPath) async {
     final metadata = await extractMetadata(modelPath);
     final runtime = detectRuntime(modelPath);
 
