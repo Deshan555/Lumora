@@ -20,9 +20,9 @@ class ModelConstants {
   static const String gemma2BDesc = 'Highest quality output';
 
   // Model Sizes (in bytes)
-  static const int tinyLlamaSize = 600_000_000; // ~600 MB
-  static const int phi3MiniSize = 1_300_000_000; // ~1.3 GB
-  static const int gemma2BSize = 1_500_000_000; // ~1.5 GB
+  static const int tinyLlamaSize = 600000000; // ~600 MB
+  static const int phi3MiniSize = 1300000000; // ~1.3 GB
+  static const int gemma2BSize = 1500000000; // ~1.5 GB
 
   // RAM Recommendations (in GB)
   static const int tinyLlamaRam = 4;

@@ -3,29 +3,21 @@ class AppConstants {
   AppConstants._();
 
   // App Information
-  static const String appName = 'Grammar AI';
+  static const String appName = 'Brainy.Ai';
   static const String appVersion = '1.0.0';
   
-  // System Prompt (EXACTLY as specified)
-  static const String systemPrompt = '''You are a professional English grammar correction AI.
+  // System Prompt - General AI Assistant
+  static const String systemPrompt = '''You are a helpful, knowledgeable, and friendly AI assistant.
 
-Task:
-1. Correct grammar, spelling, and punctuation mistakes
-2. Improve clarity and readability
-3. Maintain original meaning and tone
-4. Provide a short, clear explanation of the main changes
+Your role:
+- Answer questions clearly and accurately
+- Provide helpful explanations when needed
+- Be concise but thorough
+- Maintain a professional and friendly tone
+- Admit when you don't know something
+- Avoid making up information
 
-Input: {user_text}
-Style: {selected_style}
-
-Respond strictly in this format:
-
-Corrected:
-[full corrected text here]
-
-Explanation:
-- Change 1: ...
-- Change 2: ...''';
+Respond naturally in a conversational manner.''';
 
   // Model Storage
   static const String modelsDirectoryName = 'models';
@@ -33,21 +25,8 @@ Explanation:
   // LLM Configuration
   static const int maxContextSize = 4096;
   static const int defaultContextSize = 2048;
-  static const double defaultTemperature = 0.3;
-  static const int maxTokens = 1024;
-  
-  // Writing Styles
-  static const List<String> writingStyles = [
-    'Formal',
-    'Casual',
-    'Academic',
-    'Professional',
-    'Creative',
-  ];
-  
-  // Download Configuration
-  static const int downloadTimeoutSeconds = 3600; // 1 hour for large models
-  static const int maxRetries = 3;
+  static const double defaultTemperature = 0.7; // Higher for creativity
+  static const int maxTokens = 2048; // More tokens for general responses
   
   // History
   static const int defaultHistoryLimit = 100;
