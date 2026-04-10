@@ -815,140 +815,250 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     final showSendButton = hasText || hasAttachments;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       color: EdgeTheme.primaryBackground,
       child: SafeArea(
         top: false,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Attach/Paperclip button (left)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: GestureDetector(
-                onTap: _pickAttachments,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: EdgeTheme.secondarySurface,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: FaIcon(
-                      FontAwesomeIcons.paperclip,
-                      color: _pendingAttachments.isNotEmpty
-                          ? EdgeTheme.lavender
-                          : EdgeTheme.textSecondary,
-                      size: 16,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(width: 8),
-
-            // Text input field (center, expands)
-            Expanded(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: EdgeTheme.secondarySurface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: hasText
-                        ? EdgeTheme.lavender.withValues(alpha: 0.4)
-                        : Colors.transparent,
-                    width: 1.5,
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 120),
-                  child: TextField(
-                    controller: _inputController,
-                    maxLines: null,
-                    minLines: 1,
-                    textInputAction: TextInputAction.newline,
-                    onChanged: (val) {
-                      setState(() {}); // Triggers rebuild to update send button state
-                    },
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      height: 1.3,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: activeModel?.hfTaskId == 'text-to-image'
-                          ? 'Describe image...'
-                          : 'Message',
-                      hintStyle: TextStyle(
-                        color: EdgeTheme.textTertiary.withValues(alpha: 0.5),
-                        fontSize: 16,
+            // Attachment preview chips above input
+            if (hasAttachments) _buildAttachmentChips(),
+            
+            // Input bar
+            Container(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Plus button for attachments (left)
+                  GestureDetector(
+                    onTap: _pickAttachments,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(
+                        color: EdgeTheme.secondarySurface,
+                        shape: BoxShape.circle,
                       ),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
+                      child: Center(
+                        child: FaIcon(
+                          FontAwesomeIcons.plus,
+                          color: EdgeTheme.textSecondary,
+                          size: 18,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
 
-            const SizedBox(width: 8),
+                  const SizedBox(width: 8),
 
-            // Send button (right) - shows send icon when typing, mic when empty
-            GestureDetector(
-              onTap: _isResponding
-                  ? null
-                  : (showSendButton ? _sendMessage : _toggleVoiceInput),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: showSendButton && !_isResponding
-                      ? EdgeTheme.lavender
-                      : EdgeTheme.secondarySurface,
-                  shape: BoxShape.circle,
-                  boxShadow: showSendButton && !_isResponding
-                      ? [
-                          BoxShadow(
-                            color: EdgeTheme.lavender.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: _isResponding
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : FaIcon(
-                          showSendButton
-                              ? FontAwesomeIcons.arrowUp
-                              : FontAwesomeIcons.microphone,
-                          color: showSendButton
-                              ? Colors.black
-                              : EdgeTheme.textSecondary,
-                          size: 16,
+                  // Image/Gallery button
+                  GestureDetector(
+                    onTap: _pickImageFromGallery,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(
+                        color: EdgeTheme.secondarySurface,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: FaIcon(
+                          FontAwesomeIcons.image,
+                          color: EdgeTheme.textSecondary,
+                          size: 18,
                         ),
-                ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // Text input field (center, expands)
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: EdgeTheme.secondarySurface,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      constraints: const BoxConstraints(maxHeight: 120),
+                      child: TextField(
+                        controller: _inputController,
+                        maxLines: null,
+                        minLines: 1,
+                        textInputAction: TextInputAction.newline,
+                        onChanged: (val) {
+                          setState(() {}); // Triggers rebuild to update send button state
+                        },
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          height: 1.3,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: activeModel?.hfTaskId == 'text-to-image'
+                              ? 'Describe image...'
+                              : 'Message',
+                          hintStyle: TextStyle(
+                            color: EdgeTheme.textTertiary.withValues(alpha: 0.5),
+                            fontSize: 16,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // Mic/Send button (right)
+                  GestureDetector(
+                    onTap: _isResponding
+                        ? null
+                        : (showSendButton ? _sendMessage : _toggleVoiceInput),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: showSendButton && !_isResponding
+                            ? EdgeTheme.lavender
+                            : EdgeTheme.secondarySurface,
+                        shape: BoxShape.circle,
+                        boxShadow: showSendButton && !_isResponding
+                            ? [
+                                BoxShadow(
+                                  color: EdgeTheme.lavender.withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: _isResponding
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : FaIcon(
+                                showSendButton
+                                    ? FontAwesomeIcons.arrowUp
+                                    : FontAwesomeIcons.microphone,
+                                color: showSendButton
+                                    ? Colors.black
+                                    : EdgeTheme.textSecondary,
+                                size: 18,
+                              ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildAttachmentChips() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _pendingAttachments.asMap().entries.map((entry) {
+            final index = entry.key;
+            final path = entry.value;
+            final name = path.split('/').last;
+            final isImage = _isImageFile(path);
+            
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Chip(
+                backgroundColor: EdgeTheme.secondarySurface,
+                deleteIconColor: EdgeTheme.textTertiary,
+                onDeleted: () {
+                  setState(() {
+                    _pendingAttachments.removeAt(index);
+                  });
+                },
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isImage)
+                      Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.file(
+                            File(path),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => FaIcon(
+                              FontAwesomeIcons.image,
+                              size: 12,
+                              color: EdgeTheme.lavender,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      FaIcon(
+                        _fileIcon(path.split('.').last.toLowerCase()),
+                        size: 12,
+                        color: EdgeTheme.lavender,
+                      ),
+                    const SizedBox(width: 6),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  bool _isImageFile(String path) {
+    final ext = path.split('.').last.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].contains(ext);
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    HapticFeedback.lightImpact();
+    
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: true,
+    );
+
+    if (result != null && result.files.isNotEmpty) {
+      for (final file in result.files) {
+        if (file.path != null && !_pendingAttachments.contains(file.path)) {
+          setState(() {
+            _pendingAttachments.add(file.path!);
+          });
+        }
+      }
+    }
   }
 
 }
