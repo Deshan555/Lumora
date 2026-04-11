@@ -159,16 +159,28 @@ class LLMService {
   }
 
   /// Initialize model using specified runtime
-  Future<void> initializeModel(String modelPath, {LlmRuntime? runtime}) async {
+  /// 
+  /// Parameters:
+  /// - [modelPath]: Path to the model file
+  /// - [runtime]: Explicitly choose the engine/runtime to use
+  ///   If null, auto-detects from file extension
+  /// - [forceEngine]: If true, uses the specified runtime even if the file 
+  ///   extension doesn't match (useful for testing or special cases)
+  Future<void> initializeModel(
+    String modelPath, {
+    LlmRuntime? runtime,
+    bool forceEngine = false,
+  }) async {
     try {
-      // Auto-detect runtime if not specified
-      final detectedRuntime = runtime ?? detectRuntime(modelPath);
+      // Determine which runtime to use
+      final detectedRuntime = detectRuntime(modelPath);
+      final selectedRuntime = forceEngine ? (runtime ?? detectedRuntime) : (runtime ?? detectedRuntime);
 
       // Dispose existing engine if any
       await unloadModel();
 
-      // Create appropriate engine based on runtime
-      switch (detectedRuntime) {
+      // Create appropriate engine based on selected runtime
+      switch (selectedRuntime) {
         case LlmRuntime.liteRT:
         case LlmRuntime.liteRTNpu:
         case LlmRuntime.liteRTGpu:
@@ -177,7 +189,7 @@ class LLMService {
           );
 
           _activeEngine = LiteRTEngine(liteRtConfig);
-          _activeRuntime = detectedRuntime;
+          _activeRuntime = selectedRuntime;
           break;
 
         case LlmRuntime.llamaCpp:
@@ -186,7 +198,7 @@ class LLMService {
         case LlmRuntime.llamaCppVulkan:
         case LlmRuntime.llamaCppOpenCL:
           _activeEngine = LlamaCppEngine();
-          _activeRuntime = detectedRuntime;
+          _activeRuntime = selectedRuntime;
           break;
       }
 
@@ -195,7 +207,12 @@ class LLMService {
       _isLoaded = true;
 
       if (_config.verboseLogging) {
-        print('[LLMService] Model loaded: $modelPath with runtime: $detectedRuntime');
+        print('[LLMService] Model loaded: $modelPath');
+        print('[LLMService] Auto-detected runtime: $detectedRuntime');
+        print('[LLMService] Selected runtime: $selectedRuntime');
+        if (forceEngine) {
+          print('[LLMService] ⚠️ Forced engine selection (file extension: $detectedRuntime)');
+        }
       }
     } catch (e) {
       _isLoaded = false;

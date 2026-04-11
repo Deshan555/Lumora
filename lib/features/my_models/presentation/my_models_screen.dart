@@ -108,21 +108,16 @@ class _MyModelsScreenState extends ConsumerState<MyModelsScreen> {
 
   Future<void> _activateModel(ModelInfo model) async {
     if (_isActivating[model.id] == true) return;
-    
-    setState(() => _isActivating[model.id] = true);
 
     final modelPath = model.localPath;
     if (modelPath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Model file not found')),
       );
-      setState(() => _isActivating[model.id] = false);
       return;
     }
 
     if (model.type == ModelType.diffusion) {
-      setState(() => _isActivating[model.id] = false);
-
       final useCloud = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -144,7 +139,7 @@ class _MyModelsScreenState extends ConsumerState<MyModelsScreen> {
         // We must map the local filename ID to a valid Hugging Face Repository ID
         String mappedHfId = 'runwayml/stable-diffusion-v1-5'; // Default fallback
         final lowercaseName = model.name.toLowerCase();
-        
+
         if (lowercaseName.contains('xl')) {
           mappedHfId = 'stabilityai/stable-diffusion-xl-base-1.0';
         } else if (lowercaseName.contains('flux')) {
@@ -156,10 +151,10 @@ class _MyModelsScreenState extends ConsumerState<MyModelsScreen> {
           id: mappedHfId,  // Overwrite local fake ID with real HF ID
           name: '${model.name} (Cloud Node)',
         );
-        
+
         ref.read(activeModelProvider.notifier).state = remoteModel;
         ref.read(settingsProvider.notifier).updateActiveModel(remoteModel.id);
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -178,6 +173,16 @@ class _MyModelsScreenState extends ConsumerState<MyModelsScreen> {
       return;
     }
 
+    // Show engine selection dialog
+    final selectedRuntime = await showDialog<LlmRuntime>(
+      context: context,
+      builder: (context) => _EngineSelectionDialog(modelPath: modelPath),
+    );
+
+    if (selectedRuntime == null) return; // User cancelled
+
+    setState(() => _isActivating[model.id] = true);
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: EdgeTheme.surfaceColor,
@@ -189,7 +194,12 @@ class _MyModelsScreenState extends ConsumerState<MyModelsScreen> {
               child: CircularProgressIndicator(strokeWidth: 2, color: EdgeTheme.lavender),
             ),
             const SizedBox(width: 12),
-            Text('Calibrating Core: ${model.name}...', style: const TextStyle(color: Colors.white)),
+            Expanded(
+              child: Text(
+                'Calibrating Core: ${model.name}...\nEngine: ${selectedRuntime.name.toUpperCase()}',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
           ],
         ),
         duration: const Duration(minutes: 2),
@@ -198,11 +208,20 @@ class _MyModelsScreenState extends ConsumerState<MyModelsScreen> {
 
     try {
       final correctionRepo = ref.read(correctionRepositoryProvider);
-      await correctionRepo.initializeModel(modelPath);
       
+      // Determine if we need to force the engine
+      final detectedRuntime = ModelMetadataExtractor.detectRuntime(modelPath);
+      final forceEngine = detectedRuntime != selectedRuntime;
+
+      await correctionRepo.initializeModelWithEngine(
+        modelPath,
+        runtime: selectedRuntime,
+        forceEngine: forceEngine,
+      );
+
       ref.read(activeModelProvider.notifier).state = model;
       ref.read(settingsProvider.notifier).updateActiveModel(model.id);
-      
+
       if (mounted) {
         setState(() => _isActivating[model.id] = false);
         ScaffoldMessenger.of(context).clearSnackBars();
@@ -212,7 +231,11 @@ class _MyModelsScreenState extends ConsumerState<MyModelsScreen> {
               children: [
                 const FaIcon(FontAwesomeIcons.checkDouble, color: Colors.white, size: 16),
                 const SizedBox(width: 12),
-                Text('${model.name} activated.'),
+                Expanded(
+                  child: Text(
+                    '${model.name} activated\nEngine: ${selectedRuntime.name.toUpperCase()}',
+                  ),
+                ),
               ],
             ),
             backgroundColor: EdgeTheme.successGreen,
@@ -580,6 +603,268 @@ class _MyModelsScreenState extends ConsumerState<MyModelsScreen> {
                   ),
                 ],
               ),
+      ),
+    );
+  }
+}
+
+/// Dialog widget for selecting the inference engine
+class _EngineSelectionDialog extends StatefulWidget {
+  final String modelPath;
+
+  const _EngineSelectionDialog({required this.modelPath});
+
+  @override
+  State<_EngineSelectionDialog> createState() => _EngineSelectionDialogState();
+}
+
+class _EngineSelectionDialogState extends State<_EngineSelectionDialog> {
+  LlmRuntime? _selectedRuntime;
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-select based on file extension as default
+    try {
+      _selectedRuntime = ModelMetadataExtractor.detectRuntime(widget.modelPath);
+    } catch (e) {
+      _selectedRuntime = LlmRuntime.llamaCpp;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final detectedRuntime = ModelMetadataExtractor.detectRuntime(widget.modelPath);
+    final isForcing = _selectedRuntime != detectedRuntime;
+
+    return AlertDialog(
+      backgroundColor: EdgeTheme.surfaceColor,
+      title: const Text(
+        'Select Inference Engine',
+        style: TextStyle(color: Colors.white),
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'File: ${widget.modelPath.split('/').last}',
+              style: const TextStyle(color: EdgeTheme.textSecondary, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'DETECTED FORMAT:',
+              style: TextStyle(
+                color: EdgeTheme.textTertiary,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: EdgeTheme.lavender.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: EdgeTheme.lavender.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const FaIcon(FontAwesomeIcons.fileCode, color: EdgeTheme.lavender, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      detectedRuntime.name.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'SELECT ENGINE:',
+              style: TextStyle(
+                color: EdgeTheme.textTertiary,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildEngineOption(
+              runtime: LlmRuntime.llamaCpp,
+              icon: FontAwesomeIcons.fire,
+              label: 'llama.cpp',
+              description: 'GGUF format • CPU/GPU • Wide model support',
+              recommended: detectedRuntime == LlmRuntime.llamaCpp,
+            ),
+            const SizedBox(height: 8),
+            _buildEngineOption(
+              runtime: LlmRuntime.liteRT,
+              icon: FontAwesomeIcons.bolt,
+              label: 'LiteRT',
+              description: 'LiteRT format • NPU/GPU • Best for Gemma models',
+              recommended: detectedRuntime == LlmRuntime.liteRT ||
+                  detectedRuntime == LlmRuntime.liteRTGpu ||
+                  detectedRuntime == LlmRuntime.liteRTNpu,
+            ),
+            if (isForcing)
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: EdgeTheme.warningOrange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: EdgeTheme.warningOrange.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const FaIcon(
+                        FontAwesomeIcons.triangleExclamation,
+                        color: EdgeTheme.warningOrange,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Forcing engine different from detected format may fail!',
+                          style: const TextStyle(
+                            color: EdgeTheme.warningOrange,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, _selectedRuntime),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: EdgeTheme.lavender,
+            foregroundColor: EdgeTheme.primaryBackground,
+          ),
+          child: const Text('LOAD MODEL'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEngineOption({
+    required LlmRuntime runtime,
+    required IconData icon,
+    required String label,
+    required String description,
+    required bool recommended,
+  }) {
+    final isSelected = _selectedRuntime == runtime;
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedRuntime = runtime),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? EdgeTheme.lavender.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? EdgeTheme.lavender : Colors.white.withValues(alpha: 0.1),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? EdgeTheme.lavender
+                    : Colors.white.withValues(alpha: 0.05),
+                shape: BoxShape.circle,
+              ),
+              child: FaIcon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? EdgeTheme.primaryBackground
+                    : EdgeTheme.textTertiary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : EdgeTheme.textSecondary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (recommended) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: EdgeTheme.successGreen.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'RECOMMENDED',
+                            style: TextStyle(
+                              color: EdgeTheme.successGreen,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: const TextStyle(
+                      color: EdgeTheme.textTertiary,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const FaIcon(
+                FontAwesomeIcons.circleCheck,
+                color: EdgeTheme.lavender,
+                size: 20,
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -17,9 +17,29 @@ class CorrectionRepositoryImpl implements ICorrectionRepository {
 
   @override
   Future<void> initializeModel(String modelPath) async {
-    final activeModel = _ref.read(activeModelProvider);
-    final runtime = activeModel?.runtime ?? LlmRuntime.llamaCpp;
-    await _llmService.initializeModel(modelPath, runtime: runtime);
+    // Let LLMService auto-detect the runtime from the file extension
+    // rather than relying on potentially incorrect metadata
+    await _llmService.initializeModel(modelPath);
+    _isInitialized = true;
+  }
+
+  /// Initialize model with explicit engine selection
+  /// 
+  /// Parameters:
+  /// - [modelPath]: Path to the model file
+  /// - [runtime]: Explicitly choose which engine to use
+  /// - [forceEngine]: If true, bypasses file extension check
+  @override
+  Future<void> initializeModelWithEngine(
+    String modelPath, {
+    required LlmRuntime runtime,
+    bool forceEngine = false,
+  }) async {
+    await _llmService.initializeModel(
+      modelPath,
+      runtime: runtime,
+      forceEngine: forceEngine,
+    );
     _isInitialized = true;
   }
 

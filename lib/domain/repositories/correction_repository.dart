@@ -1,7 +1,22 @@
+import '../entities/model_info.dart';
+
 /// Repository interface for AI chat
 abstract class ICorrectionRepository {
   /// Initialize the LLM with a model file
+  /// Auto-detects the engine based on file extension
   Future<void> initializeModel(String modelPath);
+
+  /// Initialize model with explicit engine selection
+  /// 
+  /// Parameters:
+  /// - [modelPath]: Path to the model file
+  /// - [runtime]: Explicitly choose which engine to use
+  /// - [forceEngine]: If true, bypasses file extension check (e.g., force GGUF engine on .litertlm file)
+  Future<void> initializeModelWithEngine(
+    String modelPath, {
+    required LlmRuntime runtime,
+    bool forceEngine = false,
+  });
 
   /// Unload the current model from memory
   Future<void> unloadModel();
