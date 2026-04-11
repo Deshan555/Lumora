@@ -93,7 +93,7 @@ class ExternalModelStorageService {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['gguf', 'bin', 'litertlm', 'task'],
+        allowedExtensions: ['gguf', 'bin'],
         allowMultiple: false,
       );
 

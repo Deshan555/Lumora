@@ -20,15 +20,6 @@ enum LlmRuntime {
 
   /// llama.cpp with OpenCL GPU acceleration (Android Adreno/Intel).
   llamaCppOpenCL,
-
-  /// High-performance LiteRT-LM support (Google).
-  liteRT,
-
-  /// LiteRT-LM with NPU acceleration (Android only).
-  liteRTNpu,
-
-  /// LiteRT-LM with GPU acceleration.
-  liteRTGpu,
 }
 
 /// Model categories for different AI tasks

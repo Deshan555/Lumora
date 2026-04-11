@@ -99,7 +99,7 @@ class AboutSettings extends StatelessWidget {
                 const SizedBox(height: 12),
                 _TechItem(name: 'Language', value: 'Dart 3.5+'),
                 const SizedBox(height: 12),
-                _TechItem(name: 'LLM Engines', value: 'LiteRT-LM + llama.cpp'),
+                _TechItem(name: 'LLM Engines', value: 'llama.cpp'),
                 const SizedBox(height: 12),
                 _TechItem(name: 'State Management', value: 'Riverpod'),
                 const SizedBox(height: 12),

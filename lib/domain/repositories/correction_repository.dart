@@ -11,7 +11,7 @@ abstract class ICorrectionRepository {
   /// Parameters:
   /// - [modelPath]: Path to the model file
   /// - [runtime]: Explicitly choose which engine to use
-  /// - [forceEngine]: If true, bypasses file extension check (e.g., force GGUF engine on .litertlm file)
+  /// - [forceEngine]: If true, bypasses file extension check
   Future<void> initializeModelWithEngine(
     String modelPath, {
     required LlmRuntime runtime,

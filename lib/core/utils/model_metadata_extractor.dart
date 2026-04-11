@@ -92,9 +92,7 @@ class ModelMetadataExtractor {
     // Extract based on format
     if (lowerPath.endsWith('.gguf')) {
       return await _extractGgufMetadata(modelPath, fileSize);
-    } else if (lowerPath.endsWith('.litertlm') || lowerPath.endsWith('.task')) {
-      return await _extractLitertMetadata(modelPath, fileSize);
-    } else if (lowerPath.endsWith('.bin') || lowerPath.endsWith('.tflite')) {
+    } else if (lowerPath.endsWith('.bin')) {
       return await _extractLegacyMetadata(modelPath, fileSize);
     }
 
@@ -161,57 +159,6 @@ class ModelMetadataExtractor {
         format: 'GGUF',
         isValid: false,
         error: 'Error extracting GGUF metadata: $e',
-      );
-    }
-  }
-
-  /// Extract LiteRT model metadata
-  static Future<ExtractedModelMetadata> _extractLitertMetadata(
-    String modelPath,
-    int fileSize,
-  ) async {
-    try {
-      // LiteRT models don't have easy metadata extraction
-      // We can infer some information from the filename
-      final filename = modelPath.split('/').last.toLowerCase();
-      
-      String architecture = 'unknown';
-      if (filename.contains('gemma')) {
-        architecture = 'gemma';
-      } else if (filename.contains('llama')) {
-        architecture = 'llama';
-      } else if (filename.contains('phi')) {
-        architecture = 'phi';
-      } else if (filename.contains('qwen')) {
-        architecture = 'qwen';
-      }
-
-      // Estimate parameters based on file size
-      // Rough estimation for quantized models
-      final bytesPerParam = 0.8; // Average for Q4 quantization
-      final parameterCount = (fileSize / bytesPerParam).round();
-
-      return ExtractedModelMetadata(
-        architecture: architecture,
-        parameterCount: parameterCount,
-        quantizationType: 'LiteRT',
-        contextLength: 0,
-        recommendedContext: 4096,
-        fileSize: fileSize,
-        format: 'LiteRT-LM',
-        isValid: true,
-      );
-    } catch (e) {
-      return ExtractedModelMetadata(
-        architecture: 'unknown',
-        parameterCount: 0,
-        quantizationType: 'unknown',
-        contextLength: 0,
-        recommendedContext: 2048,
-        fileSize: fileSize,
-        format: 'LiteRT-LM',
-        isValid: false,
-        error: 'Error extracting LiteRT metadata: $e',
       );
     }
   }
@@ -285,7 +232,7 @@ class ModelMetadataExtractor {
     }
 
     // Check if format is supported
-    if (!['GGUF', 'LiteRT-LM', 'Legacy'].contains(metadata.format)) {
+    if (metadata.format != 'GGUF' && !metadata.format.contains('Legacy')) {
       errors.add('Unsupported model format: ${metadata.format}');
     }
 
@@ -301,17 +248,11 @@ class ModelMetadataExtractor {
   static LlmRuntime detectRuntime(String modelPath) {
     final lowerPath = modelPath.toLowerCase();
 
-    if (lowerPath.endsWith('.litertlm')) {
-      return LlmRuntime.liteRTGpu;
-    }
-    if (lowerPath.endsWith('.task')) {
-      return LlmRuntime.liteRT;
-    }
     if (lowerPath.endsWith('.gguf')) {
       return LlmRuntime.llamaCpp;
     }
-    if (lowerPath.endsWith('.bin') || lowerPath.endsWith('.tflite')) {
-      return LlmRuntime.liteRT;
+    if (lowerPath.endsWith('.bin')) {
+      return LlmRuntime.llamaCpp;
     }
 
     throw Exception('Unknown model format');

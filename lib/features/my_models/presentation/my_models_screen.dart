@@ -705,16 +705,6 @@ class _EngineSelectionDialogState extends State<_EngineSelectionDialog> {
               description: 'GGUF format • CPU/GPU • Wide model support',
               recommended: detectedRuntime == LlmRuntime.llamaCpp,
             ),
-            const SizedBox(height: 8),
-            _buildEngineOption(
-              runtime: LlmRuntime.liteRT,
-              icon: FontAwesomeIcons.bolt,
-              label: 'LiteRT',
-              description: 'LiteRT format • NPU/GPU • Best for Gemma models',
-              recommended: detectedRuntime == LlmRuntime.liteRT ||
-                  detectedRuntime == LlmRuntime.liteRTGpu ||
-                  detectedRuntime == LlmRuntime.liteRTNpu,
-            ),
             if (isForcing)
               Padding(
                 padding: const EdgeInsets.only(top: 16),

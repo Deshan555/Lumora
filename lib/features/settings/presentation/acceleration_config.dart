@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../core/theme/edge_theme.dart';
 import '../../../data/datasources/llm_service.dart';
-import '../../../data/datasources/litert_engine.dart';
 import '../../../data/datasources/llama_cpp_engine.dart';
 import '../../../domain/entities/model_info.dart';
 
@@ -111,9 +110,7 @@ class _AccelerationConfigState extends ConsumerState<AccelerationConfig> {
   }
 
   Widget _buildStatusCard() {
-    final hasNpu = _availableRuntimes.contains(LlmRuntime.liteRTNpu);
     final hasGpu = _availableRuntimes.any((r) =>
-        r == LlmRuntime.liteRTGpu ||
         r == LlmRuntime.llamaCppCuda ||
         r == LlmRuntime.llamaCppMetal ||
         r == LlmRuntime.llamaCppVulkan ||
@@ -132,25 +129,6 @@ class _AccelerationConfigState extends ConsumerState<AccelerationConfig> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      hasNpu ? FontAwesomeIcons.microchip : FontAwesomeIcons.xmark,
-                      color: hasNpu ? Colors.green : Colors.red,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      hasNpu ? 'NPU Available' : 'NPU Not Detected',
-                      style: TextStyle(
-                        color: hasNpu ? Colors.green : Colors.red,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
                 Row(
                   children: [
                     Icon(
@@ -288,16 +266,6 @@ class _AccelerationConfigState extends ConsumerState<AccelerationConfig> {
           const SizedBox(height: 12),
           _buildInfoRow('Engine', _engineInfo['engine'] ?? 'N/A'),
           _buildInfoRow('Runtime', _engineInfo['runtime'] ?? 'none'),
-          if (_engineInfo['npuAvailable'] != null)
-            _buildInfoRow(
-              'NPU',
-              _engineInfo['npuAvailable'] == true ? 'Yes' : 'No',
-            ),
-          if (_engineInfo['backends'] != null)
-            _buildInfoRow(
-              'LiteRT Backends',
-              (_engineInfo['backends'] as List).join(', '),
-            ),
           if (_engineInfo['gpuBackends'] != null)
             _buildInfoRow(
               'GPU Backends',
@@ -349,12 +317,6 @@ class _AccelerationConfigState extends ConsumerState<AccelerationConfig> {
     Color color;
 
     switch (runtime) {
-      case LlmRuntime.liteRT:
-      case LlmRuntime.liteRTGpu:
-      case LlmRuntime.liteRTNpu:
-        icon = FontAwesomeIcons.google;
-        color = Colors.blue;
-        break;
       case LlmRuntime.llamaCpp:
         icon = FontAwesomeIcons.brain;
         color = Colors.orange;
@@ -382,42 +344,22 @@ class _AccelerationConfigState extends ConsumerState<AccelerationConfig> {
 
   String _getRuntimeName(LlmRuntime runtime) {
     switch (runtime) {
-      case LlmRuntime.liteRT:
-        'LiteRT-LM (Auto)';
-        break;
-      case LlmRuntime.liteRTGpu:
-        'LiteRT-LM (GPU)';
-        break;
-      case LlmRuntime.liteRTNpu:
-        'LiteRT-LM (NPU)';
-        break;
       case LlmRuntime.llamaCpp:
-        'llama.cpp (CPU)';
-        break;
+        return 'llama.cpp (CPU)';
       case LlmRuntime.llamaCppCuda:
-        'llama.cpp (CUDA)';
-        break;
+        return 'llama.cpp (CUDA)';
       case LlmRuntime.llamaCppMetal:
-        'llama.cpp (Metal)';
-        break;
+        return 'llama.cpp (Metal)';
       case LlmRuntime.llamaCppVulkan:
-        'llama.cpp (Vulkan)';
-        break;
+        return 'llama.cpp (Vulkan)';
       case LlmRuntime.llamaCppOpenCL:
-        'llama.cpp (OpenCL)';
-        break;
+        return 'llama.cpp (OpenCL)';
     }
     return runtime.name;
   }
 
   String _getRuntimeDescription(LlmRuntime runtime) {
     switch (runtime) {
-      case LlmRuntime.liteRT:
-        return 'Google\'s high-performance runtime (auto-select)';
-      case LlmRuntime.liteRTGpu:
-        return 'GPU-accelerated inference (OpenCL/Vulkan/Metal)';
-      case LlmRuntime.liteRTNpu:
-        return 'NPU-accelerated (MediaTek/Qualcomm/Tensor)';
       case LlmRuntime.llamaCpp:
         return 'Industry-standard GGUF inference (CPU)';
       case LlmRuntime.llamaCppCuda:

@@ -21,32 +21,6 @@ class AvailableModels {
 
       // === TEXT & WRITING MODELS ===
       ModelInfo(
-        id: 'gemma-2-2b-it-litert',
-        name: 'Gemma 2 2B (LiteRT)',
-        description: 'Google\'s Gemma running on LiteRT-LM. Up to 4x faster on Android NPU/GPU.',
-        filename: 'gemma-2-2b-it.litertlm',
-        sizeBytes: 1600000000,
-        downloadUrl: 'https://huggingface.co/google/gemma-2-2b-it-litert/resolve/main/gemma-2-2b-it.litertlm',
-        category: ModelCategories.text,
-        recommendedRamGB: 4,
-        tags: 'google,fast,efficient,litert',
-        runtime: LlmRuntime.liteRTGpu,
-        contextWindow: 8192,
-      ),
-      ModelInfo(
-        id: 'gemma-2-2b-it-litert-npu',
-        name: 'Gemma 2 2B (LiteRT NPU)',
-        description: 'Optimized for MediaTek/Qualcomm NPU. Maximum efficiency and speed.',
-        filename: 'gemma-2-2b-it-npu.litertlm',
-        sizeBytes: 1600000000,
-        downloadUrl: 'https://huggingface.co/google/gemma-2-2b-it-litert/resolve/main/gemma-2-2b-it-npu.litertlm',
-        category: ModelCategories.text,
-        recommendedRamGB: 4,
-        tags: 'google,fast,efficient,litert,npu',
-        runtime: LlmRuntime.liteRTNpu,
-        contextWindow: 8192,
-      ),
-      ModelInfo(
         id: 'phi-3-mini-4k-instruct',
         name: 'Phi-3 Mini 4K Instruct',
         description: 'Best overall text model. Great for general questions, writing, and analysis.',

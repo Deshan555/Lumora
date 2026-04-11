@@ -675,7 +675,6 @@ class _ModelHubScreenState extends ConsumerState<ModelHubScreen> {
 
   Widget _buildModelCapabilityBadge(ModelInfo model) {
     final isDiffusion = model.type == ModelType.diffusion;
-    final isLiteRT = model.runtime == LlmRuntime.liteRT;
 
     Color badgeColor;
     Color borderColor;
@@ -685,10 +684,6 @@ class _ModelHubScreenState extends ConsumerState<ModelHubScreen> {
       badgeColor = EdgeTheme.errorRed.withValues(alpha: 0.1);
       borderColor = EdgeTheme.errorRed.withValues(alpha: 0.3);
       label = 'IMAGE GEN';
-    } else if (isLiteRT) {
-      badgeColor = const Color(0xFF00E5FF).withValues(alpha: 0.1); // Cyan for LiteRT
-      borderColor = const Color(0xFF00E5FF).withValues(alpha: 0.4);
-      label = '⚡ LITERT';
     } else {
       badgeColor = EdgeTheme.lavender.withValues(alpha: 0.1);
       borderColor = EdgeTheme.lavender.withValues(alpha: 0.3);
@@ -708,9 +703,7 @@ class _ModelHubScreenState extends ConsumerState<ModelHubScreen> {
           fontSize: 10,
           color: isDiffusion
               ? EdgeTheme.errorRed
-              : isLiteRT
-                  ? const Color(0xFF00E5FF)
-                  : EdgeTheme.lavender,
+              : EdgeTheme.lavender,
           fontWeight: FontWeight.bold,
         ),
       ),

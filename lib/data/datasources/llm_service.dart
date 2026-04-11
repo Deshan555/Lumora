@@ -2,27 +2,20 @@ import 'dart:async';
 import '../../domain/entities/model_info.dart';
 import './llm_engine_interface.dart';
 import './llama_cpp_engine.dart';
-import './litert_engine.dart';
 
 /// Configuration for LLM service
 class LLMServiceConfig {
-  /// LiteRT configuration
-  final LiteRtConfig liteRtConfig;
-
   /// Enable verbose logging
   final bool verboseLogging;
 
   const LLMServiceConfig({
-    LiteRtConfig? liteRtConfig,
     this.verboseLogging = false,
-  })  : liteRtConfig = liteRtConfig ?? const LiteRtConfig();
+  });
 
   LLMServiceConfig copyWith({
-    LiteRtConfig? liteRtConfig,
     bool? verboseLogging,
   }) {
     return LLMServiceConfig(
-      liteRtConfig: liteRtConfig ?? this.liteRtConfig,
       verboseLogging: verboseLogging ?? this.verboseLogging,
     );
   }
@@ -31,11 +24,6 @@ class LLMServiceConfig {
 /// Master LLM Service for running on-device inference with multiple engines.
 ///
 /// Supported Engines:
-/// - **LiteRT-LM**: Google's high-performance runtime with NPU/GPU acceleration
-///   - Best for: Gemma models, maximum speed on Android
-///   - Formats: .litertlm, .task
-///   - Backends: NPU (Android), GPU (OpenCL/Vulkan/Metal), CPU
-///
 /// - **llama.cpp**: Industry-standard GGUF runtime with extensive model support
 ///   - Best for: Wide model compatibility, cross-platform
 ///   - Formats: .gguf
@@ -80,36 +68,19 @@ class LLMService {
   static LlmRuntime detectRuntime(String modelPath) {
     final lower = modelPath.toLowerCase();
 
-    // LiteRT formats
-    if (lower.endsWith('.litertlm') || lower.endsWith('.task')) {
-      return LlmRuntime.liteRT;
-    }
-
     // GGUF format
     if (lower.endsWith('.gguf') || lower.endsWith('.gguf.bin')) {
       // Default to CPU, will be upgraded if GPU is available
       return LlmRuntime.llamaCpp;
     }
 
-    // Legacy formats
-    if (lower.endsWith('.bin') || lower.endsWith('.tflite')) {
-      return LlmRuntime.liteRT;
-    }
-
-    throw Exception('Unknown model format. Supported: .gguf, .litertlm, .task, .bin, .tflite');
+    throw Exception('Unknown model format. Supported: .gguf');
   }
 
   /// Check if runtime is available on current device
   static Future<bool> isRuntimeAvailable(LlmRuntime runtime) async {
     try {
       switch (runtime) {
-        case LlmRuntime.liteRT:
-        case LlmRuntime.liteRTNpu:
-        case LlmRuntime.liteRTGpu:
-          // Test LiteRT availability
-          await LiteRTEngine.isGpuAvailable();
-          return true;
-
         case LlmRuntime.llamaCpp:
         case LlmRuntime.llamaCppCuda:
         case LlmRuntime.llamaCppMetal:
@@ -121,22 +92,11 @@ class LLMService {
     } catch (e) {
       return false;
     }
-    return false;
   }
 
   /// Get all available runtimes on current device
   static Future<List<LlmRuntime>> getAvailableRuntimes() async {
     final available = <LlmRuntime>[];
-
-    // Test LiteRT
-    if (await isRuntimeAvailable(LlmRuntime.liteRT)) {
-      available.add(LlmRuntime.liteRT);
-      available.add(LlmRuntime.liteRTGpu);
-
-      if (await LiteRTEngine.isGpuAvailable()) {
-        available.add(LlmRuntime.liteRTNpu);
-      }
-    }
 
     // Test llama.cpp
     if (await isRuntimeAvailable(LlmRuntime.llamaCpp)) {
@@ -151,7 +111,7 @@ class LLMService {
   static Future<DeviceRecommendation> getDeviceRecommendation() async {
     // TODO: Implement RAM/CPU/GPU detection
     return const DeviceRecommendation(
-      recommendedRuntime: LlmRuntime.liteRT,
+      recommendedRuntime: LlmRuntime.llamaCpp,
       availableRamGB: 4,
       hasGpu: false,
       hasNpu: false,
@@ -181,17 +141,6 @@ class LLMService {
 
       // Create appropriate engine based on selected runtime
       switch (selectedRuntime) {
-        case LlmRuntime.liteRT:
-        case LlmRuntime.liteRTNpu:
-        case LlmRuntime.liteRTGpu:
-          final liteRtConfig = LiteRtConfig(
-            maxTokens: _config.liteRtConfig.maxTokens,
-          );
-
-          _activeEngine = LiteRTEngine(liteRtConfig);
-          _activeRuntime = selectedRuntime;
-          break;
-
         case LlmRuntime.llamaCpp:
         case LlmRuntime.llamaCppCuda:
         case LlmRuntime.llamaCppMetal:
@@ -296,10 +245,7 @@ class LLMService {
       'modelPath': _currentModelPath,
     };
 
-    if (_activeEngine is LiteRTEngine) {
-      info['engine'] = 'LiteRT-LM';
-      info['gpuAvailable'] = await LiteRTEngine.isGpuAvailable();
-    } else if (_activeEngine is LlamaCppEngine) {
+    if (_activeEngine is LlamaCppEngine) {
       info['engine'] = 'llama.cpp';
       info['gpuAvailable'] = await LlamaCppEngine.isGpuAvailable();
     }
