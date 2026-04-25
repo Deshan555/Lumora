@@ -20,7 +20,7 @@
 
 - [Overview](#overview)
 - [Key Features](#key-features)
-- [Dual-Engine LLM Architecture](#dual-engine-llm-architecture)
+- [LLM Architecture](#llm-architecture)
 - [Screens & Navigation](#screens--navigation)
 - [Supported AI Models](#supported-ai-models)
 - [Settings & Configuration](#settings--configuration)
@@ -40,7 +40,7 @@
 
 ## Overview
 
-BRAINY.AI is a premium, fully offline AI chat application that runs Large Language Models (LLMs) directly on your Android device — no internet connection required. Powered by a dual-engine architecture (llama.cpp + LiteRT-LM), it supports GGUF and LiteRT model formats with GPU/NPU hardware acceleration.
+BRAINY.AI is a premium, fully offline AI chat application that runs Large Language Models (LLMs) directly on your Android device — no internet connection required. Powered by the llama.cpp engine, it supports GGUF model formats with GPU hardware acceleration and forced runtime overrides.
 
 Your conversations, files, and AI interactions never leave your device. No cloud, no tracking, no data collection. Just pure edge computing intelligence.
 
@@ -71,7 +71,7 @@ Your conversations, files, and AI interactions never leave your device. No cloud
 - **Immersive Voice Chat** — Gemini Live-style hands-free conversation
 - **Continuous Listening** — Auto-detect silence (2.5s threshold) and auto-send
 - **Real-Time Transcript** — Live transcription of your speech and AI responses
-- **State-Aware Visualizer** — Animated aura that changes color per state (listening/thinking/speaking)
+- **State-Aware Visualizer** — Animated TypingIndicator widget that reflects state (listening/thinking/speaking)
 - **AI Interrupt** — Tap to stop the AI mid-response
 - **Frosted Glass UI** — Blur backdrop with gradient animations
 
@@ -79,7 +79,7 @@ Your conversations, files, and AI interactions never leave your device. No cloud
 - **Local Catalog** — 19+ pre-configured models across 6 categories (Text, Code, Math, Creative, Translation, Reasoning)
 - **Hugging Face Hub** — Cloud mode with HF model search, download, and remote inference
 - **Download Manager** — Progress bar, pause/resume, multi-file downloads
-- **Model Import** — Import custom GGUF/LiteRT files from device storage
+- **Model Import** — Import custom GGUF files from device storage with runtime detection
 - **Active Model Switching** — Load/unload models with one tap
 - **Remote Inference** — Cloud-based text generation and image generation via HF API
 
@@ -103,33 +103,23 @@ Your conversations, files, and AI interactions never leave your device. No cloud
 
 ---
 
-## Dual-Engine LLM Architecture
+## LLM Architecture
 
-BRAINY.AI uses a master orchestration layer (`LLMService`) that automatically selects the best engine based on model file format:
+BRAINY.AI uses a master orchestration layer (`LLMService`) with explicit engine selection, forced runtime overrides, and runtime detection for models using `ModelMetadataExtractor`:
 
-### Engine 1: llama.cpp (`llamadart`)
+### Core Engine: llama.cpp (`llamadart`)
 | Feature | Details |
 |---------|---------|
-| **Format** | GGUF (`.gguf`, `.gguf.bin`) |
+| **Format** | GGUF (`.gguf`, `.gguf.bin`, and additional extensions) |
 | **GPU Backends** | Vulkan (Android), Metal (iOS/macOS), CUDA (NVIDIA), OpenCL |
 | **Models** | TinyLlama, Phi-3, Qwen, Llama 3, Mistral, Mixtral, StarCoder2, CodeQwen, WizardMath |
 | **Streaming** | Token-by-token via callback |
 | **Compilation** | Auto-compiles native `.so` binaries during Gradle build |
 
-### Engine 2: LiteRT-LM (`flutter_gemma`)
-| Feature | Details |
-|---------|---------|
-| **Format** | LiteRT (`.litertlm`, `.task`) |
-| **GPU Backends** | OpenCL (Android), Metal (iOS) |
-| **NPU Support** | MediaTek, Qualcomm, Google Tensor accelerators |
-| **Models** | Gemma 2B/7B (optimized), Gemma-derived quantized variants |
-| **API** | Message-based session with async streaming |
-
-### Automatic Engine Selection
+### Automatic Engine Configuration
 ```
-Model File → LLMService.detectRuntime() → Route to Engine
+Model File → ModelMetadataExtractor → LLMService.detectRuntime()
 .gguf      → llamaCpp / llamaCppVulkan / llamaCppMetal
-.litertlm  → LiteRT / LiteRTGpu / LiteRTNpu
 Remote     → HuggingFaceService (cloud inference)
 ```
 
@@ -283,7 +273,7 @@ EditorScreen → Drawer (endDrawer) → Navigate to any screen
 
 | Service | Package | Purpose |
 |---------|---------|---------|
-| `LLMService` | Internal | Master engine orchestrator — routes requests to llama.cpp or LiteRT |
+| `LLMService` | Internal | Master engine orchestrator with explicit engine selection and forced overrides |
 | `HuggingFaceService` | Dio | HF Hub API integration — model search, downloads, cloud inference |
 | `TTSService` | flutter_tts | Text-to-speech with pitch/speed control |
 | `VoiceInputService` | speech_to_text | Speech-to-text with continuous listening and silence detection |
@@ -313,7 +303,7 @@ EditorScreen → Drawer (endDrawer) → Navigate to any screen
 | `RamHistoryTracker` | Persist RAM usage snapshots to SharedPreferences |
 | `BenchmarkService` | Measure tokens/sec, prefill latency, peak RAM |
 | `DeviceUtils` | Device RAM detection and model recommendation |
-| `ModelMetadataExtractor` | Parse GGUF/LiteRT headers for model info |
+| `ModelMetadataExtractor` | Parse GGUF headers for model info via runtime detection |
 | `ResponseParser` | Parse streaming LLM output into structured messages |
 | `ChecksumUtils` | SHA-256 verification for downloaded model files |
 
@@ -331,8 +321,7 @@ EditorScreen → Drawer (endDrawer) → Navigate to any screen
 | **Navigation** | go_router 14.8+ (ShellRoute with endDrawer) |
 | **Local Database** | Drift 2.19+ (SQLite with code generation) |
 | **Networking** | Dio 5.5+ (HTTP client with interceptors) |
-| **LLM Engine 1** | llamadart 0.6.9 (llama.cpp bindings) |
-| **LLM Engine 2** | flutter_gemma 0.10.2 (LiteRT-LM bindings) |
+| **LLM Engine** | llamadart 0.6.9 (llama.cpp bindings) |
 | **Voice** | flutter_tts 4.2+ / speech_to_text 7.0+ |
 | **Notifications** | flutter_local_notifications 21.0+ |
 | **Security** | flutter_secure_storage 10.0+ / local_auth 2.3+ |
@@ -368,7 +357,7 @@ EditorScreen → Drawer (endDrawer) → Navigate to any screen
 │                     DATA                          │
 │  ┌─────────────────────────────────────────────┐    │
 │  │  DataSources: LLMService, HuggingFace,       │    │
-│  │  LiteRTEngine, LlamaCppEngine, DownloadMgr   │    │
+│  │  LlamaCppEngine, DownloadMgr                 │    │
 │  └─────────────────────────────────────────────┘    │
 │  ┌─────────────────────────────────────────────┐    │
 │  │  Repositories Impl: SQLite (Drift),          │    │
@@ -619,7 +608,7 @@ The built-in benchmark suite grades your device into one of five tiers:
 adb shell setprop debug.llamadart.verbose true
 
 # View LLM engine logs
-adb logcat | grep -E "(llama|litert|llamadart)"
+adb logcat | grep -E "(llama|llamadart)"
 
 # Monitor memory usage
 adb shell dumpsys meminfo com.deskdemon.copilot.grammer_llm
