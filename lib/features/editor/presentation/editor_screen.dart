@@ -22,8 +22,7 @@ import './image_viewer_screen.dart';
 import './code_preview_screen.dart';
 import './voice_visualizer.dart';
 import './live_chat_screen.dart';
-import './widgets/neural_thinking_visualizer.dart';
-import './widgets/fullscreen_thinking_visualizer.dart';
+import './widgets/typing_indicator.dart';
 import '../../../core/services/wallpaper_service.dart';
 import '../../../core/services/notification_service.dart';
 import 'package:share_plus/share_plus.dart';
@@ -843,8 +842,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         if (isLlmThinking)
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 8),
-                            child: NeuralThinkingVisualizer(
-                                width: 150, height: 60),
+                            child: TypingIndicator(),
                           )
                         else if (message.isImage && message.imageUrl != null)
                           Column(
