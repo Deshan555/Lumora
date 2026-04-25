@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRAINY.AI — Deep Dive: How I Built a Fully Offline AI App for Android</title>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --ink:#16130f;
+  --ink2:#3a3630;
+  --ink3:#7a746c;
+  --ink4:#a8a29a;
+  --cream:#faf7f2;
+  --cream2:#f2ede4;
+  --cream3:#e8e0d0;
+  --cream4:#d4c9b4;
+  --green:#1e4d2b;
+  --green2:#2d7a45;
+  --green-bg:#e8f5ee;
+  --amber:#7a4a0a;
+  --amber-bg:#fdf3dc;
+  --red:#6b1f1f;
+  --red-bg:#fce8e8;
+  --blue:#1a3560;
+  --blue-bg:#e3edf7;
+  --code-bg:#1e1c18;
+  --code-text:#d4c9b4;
+  --rule:rgba(22,19,15,0.1);
+}
+
+html{font-size:17px;scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',system-ui,sans-serif;
+  background:var(--cream);
+  color:var(--ink);
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── HERO ── */
+.hero{
+  background:var(--ink);
+  padding:0;
+  position:relative;
+  overflow:hidden;
+}
+.hero-grid{
+  display:grid;
+  grid-template-columns:1fr 420px;
+  min-height:480px;
+  max-width:1100px;
+  margin:0 auto;
+}
+.hero-text{
+  padding:72px 48px 72px 48px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.hero-eyebrow{
+  font-family:'Fira Code',monospace;
+  font-size:.62rem;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.35);
+  margin-bottom:20px;
+}
+.hero h1{
+  font-family:'Bitter',Georgia,serif;
+  font-size:clamp(1.9rem,4vw,3rem);
+  font-weight:700;
+  line-height:1.12;
+  color:#fff;
+  margin-bottom:20px;
+  letter-spacing:-.02em;
+}
+.hero h1 em{
+  font-style:italic;
+  color:#8ecfa4;
+}
+.hero-sub{
+  font-size:.9rem;
+  color:rgba(255,255,255,.5);
+  max-width:420px;
+  line-height:1.7;
+  margin-bottom:32px;
+  font-weight:300;
+}
+.hero-tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.tag{
+  font-family:'Fira Code',monospace;
+  font-size:.62rem;
+  letter-spacing:.08em;
+  padding:5px 11px;
+  border-radius:2px;
+  background:rgba(255,255,255,.06);
+  color:rgba(255,255,255,.45);
+  border:1px solid rgba(255,255,255,.08);
+}
+.hero-visual{
+  background:rgba(255,255,255,.03);
+  border-left:1px solid rgba(255,255,255,.06);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:40px 36px;
+  gap:12px;
+}
+.stat-block{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:4px;
+  padding:16px 18px;
+}
+.stat-num{
+  font-family:'Bitter',serif;
+  font-size:2rem;
+  font-weight:700;
+  color:#8ecfa4;
+  line-height:1;
+  margin-bottom:4px;
+}
+.stat-desc{
+  font-size:.72rem;
+  color:rgba(255,255,255,.38);
+  font-family:'Fira Code',monospace;
+  letter-spacing:.04em;
+}
+
+/* ── NAV ── */
+.toc-bar{
+  background:var(--ink);
+  border-top:1px solid rgba(255,255,255,.06);
+  padding:0 48px;
+  display:flex;
+  gap:0;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.toc-bar::-webkit-scrollbar{display:none}
+.toc-link{
+  font-family:'Fira Code',monospace;
+  font-size:.62rem;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.3);
+  text-decoration:none;
+  padding:14px 18px;
+  border-bottom:2px solid transparent;
+  white-space:nowrap;
+  transition:color .15s, border-color .15s;
+}
+.toc-link:hover{color:rgba(255,255,255,.7);border-bottom-color:rgba(255,255,255,.2)}
+
+/* ── BODY ── */
+.article-wrap{
+  max-width:820px;
+  margin:0 auto;
+  padding:72px 40px 100px;
+}
+
+/* ── SECTION HEADERS ── */
+.section-marker{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-bottom:16px;
+  margin-top:72px;
+}
+.section-marker:first-child{margin-top:0}
+.section-num{
+  font-family:'Fira Code',monospace;
+  font-size:.65rem;
+  color:var(--ink4);
+  letter-spacing:.1em;
+  flex-shrink:0;
+}
+.section-rule{
+  flex:1;
+  height:1px;
+  background:var(--rule);
+}
+h2{
+  font-family:'Bitter',Georgia,serif;
+  font-size:1.85rem;
+  font-weight:700;
+  line-height:1.18;
+  color:var(--ink);
+  margin-bottom:20px;
+  letter-spacing:-.02em;
+}
+h3{
+  font-family:'Bitter',serif;
+  font-size:1.15rem;
+  font-weight:600;
+  color:var(--ink);
+  margin:36px 0 12px;
+  letter-spacing:-.01em;
+}
+h4{
+  font-family:'DM Sans',sans-serif;
+  font-size:.78rem;
+  font-weight:500;
+  color:var(--ink3);
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  margin:28px 0 10px;
+}
+p{margin-bottom:20px;color:var(--ink2);font-size:.97rem;line-height:1.78}
+p:last-child{margin-bottom:0}
+strong{font-weight:500;color:var(--ink)}
+em{font-style:italic}
+code{
+  font-family:'Fira Code',monospace;
+  font-size:.8em;
+  background:var(--cream2);
+  padding:2px 7px;
+  border-radius:3px;
+  color:var(--green2);
+}
+
+/* ── CODE BLOCK ── */
+.code-block{
+  background:var(--code-bg);
+  border-radius:6px;
+  overflow:hidden;
+  margin:28px 0;
+  font-size:.82rem;
+}
+.code-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 18px;
+  background:rgba(255,255,255,.04);
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.code-lang{
+  font-family:'Fira Code',monospace;
+  font-size:.6rem;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.3);
+}
+.code-title{
+  font-family:'Fira Code',monospace;
+  font-size:.65rem;
+  color:rgba(255,255,255,.4);
+}
+pre{
+  padding:20px 20px;
+  overflow-x:auto;
+  font-family:'Fira Code',monospace;
+  font-size:.8rem;
+  line-height:1.7;
+  color:var(--code-text);
+  white-space:pre;
+}
+.kw{color:#8ecfa4}
+.cm{color:rgba(212,201,180,.35);font-style:italic}
+.st{color:#f0c070}
+.nm{color:#b4d4f0}
+.fn{color:#d4a0e0}
+.op{color:rgba(212,201,180,.6)}
+
+/* ── ARCHITECTURE DIAGRAM ── */
+.arch-diagram{
+  background:var(--code-bg);
+  border-radius:6px;
+  padding:28px 24px;
+  margin:28px 0;
+  font-family:'Fira Code',monospace;
+  font-size:.78rem;
+  line-height:1.9;
+  color:var(--code-text);
+  overflow-x:auto;
+}
+.arch-box{color:#8ecfa4}
+.arch-arrow{color:rgba(212,201,180,.4)}
+.arch-label{color:#b4d4f0}
+.arch-comment{color:rgba(212,201,180,.3);font-style:italic}
+
+/* ── PULL QUOTE ── */
+.pull-quote{
+  border-left:3px solid var(--green2);
+  padding:8px 0 8px 28px;
+  margin:44px 0;
+  font-family:'Bitter',serif;
+  font-size:1.25rem;
+  font-style:italic;
+  line-height:1.55;
+  color:var(--ink);
+  font-weight:600;
+}
+
+/* ── CALLOUT ── */
+.callout{
+  border-radius:4px;
+  padding:20px 24px;
+  margin:28px 0;
+  font-size:.88rem;
+}
+.callout-green{background:var(--green-bg);border-left:3px solid var(--green2)}
+.callout-amber{background:var(--amber-bg);border-left:3px solid #d4860a}
+.callout-blue{background:var(--blue-bg);border-left:3px solid #3a6ab0}
+.callout-label{
+  font-family:'Fira Code',monospace;
+  font-size:.6rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  margin-bottom:8px;
+  font-weight:500;
+}
+.callout-green .callout-label{color:var(--green2)}
+.callout-amber .callout-label{color:#7a5010}
+.callout-blue .callout-label{color:var(--blue)}
+.callout p{font-size:.88rem;margin-bottom:6px;color:var(--ink2)}
+
+/* ── FLOW PIPELINE ── */
+.pipeline{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  margin:28px 0;
+}
+.pipe-step{
+  display:flex;
+  gap:0;
+}
+.pipe-left{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  width:44px;
+  flex-shrink:0;
+}
+.pipe-node{
+  width:34px;height:34px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Fira Code',monospace;
+  font-size:.65rem;
+  font-weight:500;
+  flex-shrink:0;
+  z-index:1;
+}
+.pipe-connector{
+  width:1px;flex:1;min-height:20px;
+  background:var(--cream3);
+}
+.pipe-body{
+  flex:1;
+  padding:4px 0 28px 18px;
+}
+.pipe-step:last-child .pipe-body{padding-bottom:0}
+.pipe-title{
+  font-size:.92rem;
+  font-weight:500;
+  color:var(--ink);
+  margin-bottom:4px;
+}
+.pipe-detail{
+  font-size:.83rem;
+  color:var(--ink3);
+  line-height:1.6;
+  margin:0;
+}
+.pipe-tech{
+  display:inline-block;
+  font-family:'Fira Code',monospace;
+  font-size:.6rem;
+  color:var(--green2);
+  background:var(--green-bg);
+  padding:2px 7px;
+  border-radius:2px;
+  margin-top:6px;
+}
+
+/* ── DATA GRID ── */
+.data-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin:28px 0;
+}
+.data-card{
+  background:var(--cream2);
+  border:1px solid var(--cream3);
+  border-radius:4px;
+  padding:18px 20px;
+}
+.data-card-label{
+  font-family:'Fira Code',monospace;
+  font-size:.6rem;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--ink3);
+  margin-bottom:10px;
+}
+.data-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  padding:5px 0;
+  border-bottom:1px solid var(--cream3);
+  font-size:.82rem;
+}
+.data-item:last-child{border-bottom:none}
+.data-key{color:var(--ink2)}
+.data-val{
+  font-family:'Fira Code',monospace;
+  font-size:.72rem;
+  color:var(--ink3);
+}
+
+/* ── GGUF ANATOMY ── */
+.gguf-anatomy{
+  background:var(--cream2);
+  border:1px solid var(--cream3);
+  border-radius:4px;
+  overflow:hidden;
+  margin:28px 0;
+}
+.gguf-row{
+  display:flex;
+  border-bottom:1px solid var(--cream3);
+  align-items:stretch;
+}
+.gguf-row:last-child{border-bottom:none}
+.gguf-offset{
+  font-family:'Fira Code',monospace;
+  font-size:.65rem;
+  color:var(--ink4);
+  padding:12px 14px;
+  background:var(--cream);
+  border-right:1px solid var(--cream3);
+  width:90px;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+}
+.gguf-field{
+  padding:12px 16px;
+  flex:1;
+}
+.gguf-name{
+  font-size:.82rem;
+  font-weight:500;
+  color:var(--ink);
+  margin-bottom:2px;
+}
+.gguf-desc{
+  font-size:.75rem;
+  color:var(--ink3);
+  margin:0;
+}
+.gguf-size{
+  font-family:'Fira Code',monospace;
+  font-size:.62rem;
+  color:var(--ink4);
+  padding:12px 14px;
+  width:80px;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+}
+.gguf-header-row{background:var(--ink)}
+.gguf-header-row .gguf-offset,.gguf-header-row .gguf-field,.gguf-header-row .gguf-size{
+  background:transparent;
+  border-color:rgba(255,255,255,.08);
+}
+.gguf-header-row .gguf-name{color:rgba(255,255,255,.6);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;font-weight:400}
+.gguf-header-row .gguf-offset,.gguf-header-row .gguf-size{color:rgba(255,255,255,.3)}
+
+/* ── VOICE PIPELINE ── */
+.voice-pipeline{
+  display:flex;
+  align-items:center;
+  gap:0;
+  margin:28px 0;
+  overflow-x:auto;
+  padding-bottom:4px;
+}
+.vp-stage{
+  flex-shrink:0;
+  background:var(--cream2);
+  border:1px solid var(--cream3);
+  border-radius:4px;
+  padding:14px 16px;
+  min-width:130px;
+  text-align:center;
+}
+.vp-stage.active{
+  background:var(--green-bg);
+  border-color:#7ec89a;
+}
+.vp-icon{
+  font-size:1.2rem;
+  margin-bottom:6px;
+  display:block;
+}
+.vp-name{
+  font-size:.75rem;
+  font-weight:500;
+  color:var(--ink);
+  margin-bottom:2px;
+}
+.vp-tech{
+  font-family:'Fira Code',monospace;
+  font-size:.6rem;
+  color:var(--ink3);
+}
+.vp-arrow{
+  width:28px;flex-shrink:0;
+  text-align:center;
+  color:var(--cream4);
+  font-size:1rem;
+  padding:0 2px;
+}
+
+/* ── USE CASES GRID ── */
+.usecases-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:14px;
+  margin:28px 0;
+}
+.uc-card{
+  background:var(--cream2);
+  border:1px solid var(--cream3);
+  border-radius:4px;
+  padding:18px 16px;
+}
+.uc-icon{
+  width:32px;height:32px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.9rem;
+  margin-bottom:12px;
+}
+.uc-title{
+  font-size:.88rem;
+  font-weight:500;
+  color:var(--ink);
+  margin-bottom:6px;
+}
+.uc-desc{
+  font-size:.78rem;
+  color:var(--ink3);
+  line-height:1.55;
+  margin:0;
+}
+
+/* ── CAPABILITY TABLE ── */
+.cap-table{
+  width:100%;
+  border-collapse:collapse;
+  margin:28px 0;
+  font-size:.83rem;
+}
+.cap-table th{
+  font-family:'Fira Code',monospace;
+  font-size:.6rem;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--ink3);
+  font-weight:400;
+  text-align:left;
+  padding:10px 14px;
+  border-bottom:2px solid var(--cream3);
+}
+.cap-table td{
+  padding:11px 14px;
+  border-bottom:1px solid var(--cream3);
+  vertical-align:top;
+  color:var(--ink2);
+}
+.cap-table tr:last-child td{border-bottom:none}
+.cap-table tr:hover td{background:var(--cream2)}
+.cap-yes{color:var(--green2);font-weight:500}
+.cap-partial{color:#9a7010}
+.cap-no{color:var(--ink4)}
+
+/* ── LIMITATIONS ── */
+.limits{margin:28px 0}
+.limit-item{
+  display:flex;gap:16px;
+  padding:18px 0;
+  border-bottom:1px solid var(--rule);
+  align-items:flex-start;
+}
+.limit-item:last-child{border-bottom:none}
+.limit-badge{
+  font-family:'Fira Code',monospace;
+  font-size:.58rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  padding:3px 8px;
+  border-radius:2px;
+  flex-shrink:0;
+  margin-top:2px;
+  font-weight:500;
+  white-space:nowrap;
+}
+.badge-hard{background:var(--red-bg);color:var(--red)}
+.badge-friction{background:var(--amber-bg);color:var(--amber)}
+.badge-minor{background:var(--blue-bg);color:var(--blue)}
+.badge-roadmap{background:var(--cream2);color:var(--ink3)}
+.limit-title{font-weight:500;font-size:.88rem;color:var(--ink);margin-bottom:4px}
+.limit-desc{font-size:.82rem;color:var(--ink3);margin:0;line-height:1.6}
+
+/* ── STACK TABLE ── */
+.stack-table{
+  width:100%;
+  border:1px solid var(--cream3);
+  border-radius:4px;
+  overflow:hidden;
+  margin:28px 0;
+  border-collapse:collapse;
+}
+.stack-table th{
+  background:var(--ink);
+  color:rgba(255,255,255,.5);
+  font-family:'Fira Code',monospace;
+  font-size:.6rem;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  text-align:left;
+  padding:10px 16px;
+  font-weight:400;
+}
+.stack-table td{
+  padding:10px 16px;
+  border-bottom:1px solid var(--cream3);
+  font-size:.83rem;
+}
+.stack-table tr:last-child td{border-bottom:none}
+.stack-table td:first-child{
+  font-family:'Fira Code',monospace;
+  font-size:.72rem;
+  color:var(--ink3);
+  background:var(--cream2);
+  width:40%;
+  border-right:1px solid var(--cream3);
+}
+.stack-table td:last-child{color:var(--ink2)}
+
+/* ── RAM BARS ── */
+.ram-chart{margin:28px 0}
+.ram-chart-label{
+  font-family:'Fira Code',monospace;
+  font-size:.6rem;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--ink3);
+  margin-bottom:18px;
+}
+.ram-row{
+  display:flex;align-items:center;
+  gap:14px;margin-bottom:11px;
+}
+.ram-label{font-size:.78rem;color:var(--ink2);width:140px;flex-shrink:0;line-height:1.3}
+.ram-bar-bg{flex:1;height:7px;background:var(--cream3);border-radius:2px;overflow:hidden}
+.ram-bar{height:100%;border-radius:2px}
+.ram-val{
+  font-family:'Fira Code',monospace;
+  font-size:.68rem;color:var(--ink3);width:36px;text-align:right;flex-shrink:0;
+}
+
+/* ── PERF TIERS ── */
+.perf-row{display:flex;gap:10px;margin:28px 0}
+.perf-card{
+  flex:1;border-radius:4px;padding:16px 10px;text-align:center;
+}
+.perf-tier{
+  font-family:'Fira Code',monospace;font-size:.58rem;
+  letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:500;
+}
+.perf-speed{
+  font-family:'Bitter',serif;font-size:1.25rem;
+  font-weight:700;line-height:1.1;margin-bottom:3px;
+}
+.perf-unit{font-size:.6rem;opacity:.6}
+
+/* ── DIVIDER ── */
+.ornament{
+  text-align:center;color:var(--ink4);
+  margin:56px 0;font-size:.7rem;
+  letter-spacing:.3em;opacity:.5;
+}
+
+/* ── CTA ── */
+.cta{
+  background:var(--ink);color:var(--cream);
+  padding:52px 48px;border-radius:6px;
+  margin-top:64px;text-align:center;
+}
+.cta h2{color:#fff;font-size:1.7rem;margin-bottom:12px}
+.cta p{color:rgba(255,255,255,.5);font-size:.88rem;max-width:460px;margin:0 auto 32px}
+.cta-btn{
+  display:inline-block;
+  font-family:'Fira Code',monospace;font-size:.65rem;
+  letter-spacing:.1em;text-transform:uppercase;
+  padding:12px 28px;border-radius:3px;
+  text-decoration:none;margin:0 6px;
+}
+.cta-solid{background:var(--green2);color:#fff}
+.cta-ghost{
+  background:transparent;color:rgba(255,255,255,.6);
+  border:1px solid rgba(255,255,255,.18);
+}
+
+@media(max-width:700px){
+  .hero-grid{grid-template-columns:1fr}
+  .hero-visual{display:none}
+  .toc-bar{padding:0 20px}
+  .article-wrap{padding:48px 20px 72px}
+  .data-grid,.usecases-grid{grid-template-columns:1fr}
+  .perf-row{flex-wrap:wrap}
+  .perf-card{min-width:calc(50% - 5px)}
+  .voice-pipeline{flex-direction:column;align-items:flex-start}
+  .vp-arrow{transform:rotate(90deg);padding:4px 0}
+  .cta{padding:36px 24px}
+}
+</style>
+</head>
+<body>
+
+<!-- ── HERO ── -->
+<header class="hero">
+  <div class="hero-grid">
+    <div class="hero-text">
+      <p class="hero-eyebrow">Deep Dive · Flutter · On-Device AI · Open Source</p>
+      <h1>I built a fully offline AI app that runs <em>entirely</em> on Android — here's how every part works</h1>
+      <p class="hero-sub">GGUF internals, llama.cpp architecture, voice pipeline, live mode, use cases, and everything I learned building BRAINY.AI from scratch.</p>
+      <div class="hero-tags">
+        <span class="tag">Flutter 3.24</span>
+        <span class="tag">llama.cpp</span>
+        <span class="tag">GGUF models</span>
+        <span class="tag">Vulkan / OpenCL</span>
+        <span class="tag">Riverpod</span>
+        <span class="tag">MIT License</span>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="stat-block">
+        <div class="stat-num">19+</div>
+        <div class="stat-desc">pre-configured models</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-num">0</div>
+        <div class="stat-desc">bytes sent to the cloud</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-num">50+</div>
+        <div class="stat-desc">tokens/sec on flagship devices</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-num">6</div>
+        <div class="stat-desc">model categories supported</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ── TOC NAV ── -->
+<nav class="toc-bar">
+  <a href="#how-it-works" class="toc-link">How it works</a>
+  <a href="#code-arch" class="toc-link">Code architecture</a>
+  <a href="#gguf" class="toc-link">GGUF internals</a>
+  <a href="#inference" class="toc-link">Inference engine</a>
+  <a href="#voice" class="toc-link">Voice pipeline</a>
+  <a href="#models" class="toc-link">Models</a>
+  <a href="#capabilities" class="toc-link">Capabilities</a>
+  <a href="#usecases" class="toc-link">Use cases</a>
+  <a href="#performance" class="toc-link">Performance</a>
+  <a href="#limitations" class="toc-link">Limitations</a>
+</nav>
+
+<!-- ── ARTICLE ── -->
+<div class="article-wrap">
+
+  <p style="font-size:1.08rem;font-style:italic;color:var(--ink2);line-height:1.75;margin-bottom:40px;padding-bottom:40px;border-bottom:1px solid var(--rule)">
+    This is a technical deep dive into how BRAINY.AI works — the architecture decisions, the models it runs, how voice mode works end-to-end, what the app can actually do, and the honest tradeoffs. If you want to build something similar or just understand what's happening under the hood, this is for you.
+  </p>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- 1. HOW IT WORKS -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="how-it-works">
+    <div class="section-marker">
+      <span class="section-num">01</span>
+      <div class="section-rule"></div>
+    </div>
+    <h2>How the app works — end to end</h2>
+
+    <p>
+      The core idea is straightforward: instead of sending your message to a remote server and waiting for a response, BRAINY.AI loads a language model into your phone's RAM and runs inference locally. The result is streamed token-by-token directly to the UI — no network latency, no API keys, no data leaving the device.
+    </p>
+
+    <div class="pipeline">
+      <div class="pipe-step">
+        <div class="pipe-left">
+          <div class="pipe-node" style="background:#1e4d2b;color:#8ecfa4">01</div>
+          <div class="pipe-connector"></div>
+        </div>
+        <div class="pipe-body">
+          <p class="pipe-title">App launch + biometric authentication</p>
+          <p class="pipe-detail">On launch, the app invokes <code>local_auth</code> to require Face ID or fingerprint before anything is shown. This is enforced every launch — no bypass, no PIN fallback by default.</p>
+          <span class="pipe-tech">local_auth 2.3+</span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-left">
+          <div class="pipe-node" style="background:#1e4d2b;color:#8ecfa4">02</div>
+          <div class="pipe-connector"></div>
+        </div>
+        <div class="pipe-body">
+          <p class="pipe-title">Model selection + metadata extraction</p>
+          <p class="pipe-detail"><code>ModelMetadataExtractor</code> reads the GGUF file header to extract architecture, quantization level, context size, and embedding dimensions without loading the full model into memory. This populates the model card UI instantly.</p>
+          <span class="pipe-tech">llamadart · ModelMetadataExtractor</span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-left">
+          <div class="pipe-node" style="background:#2d4a7a;color:#b4d4f0">03</div>
+          <div class="pipe-connector"></div>
+        </div>
+        <div class="pipe-body">
+          <p class="pipe-title">GPU backend detection + model load</p>
+          <p class="pipe-detail"><code>LLMService.detectRuntime()</code> probes available GPU backends in order: Vulkan → OpenCL → NPU → CPU. It then calls <code>llamadart</code> to load the GGUF weights into RAM and initialise the inference context with the selected backend.</p>
+          <span class="pipe-tech">Vulkan · OpenCL · NPU · llama.cpp</span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-left">
+          <div class="pipe-node" style="background:#2d4a7a;color:#b4d4f0">04</div>
+          <div class="pipe-connector"></div>
+        </div>
+        <div class="pipe-body">
+          <p class="pipe-title">Prompt formatting via template service</p>
+          <p class="pipe-detail"><code>PromptTemplateService</code> wraps your message in the correct chat template for the loaded model — Gemma, Llama 3, Phi-3, or ChatML. Using the wrong template silently degrades output quality, so this step is critical.</p>
+          <span class="pipe-tech">PromptTemplateService</span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-left">
+          <div class="pipe-node" style="background:#4a2d1e;color:#f0c070">05</div>
+          <div class="pipe-connector"></div>
+        </div>
+        <div class="pipe-body">
+          <p class="pipe-title">Token-by-token inference + streaming</p>
+          <p class="pipe-detail">llama.cpp generates tokens using the KV cache and selected sampler settings (temperature, top-p, top-k). Each token fires a Dart callback that appends to the streaming message buffer in the UI. The first token typically arrives in 500ms–2s depending on device tier.</p>
+          <span class="pipe-tech">llama.cpp · KV cache · Dart streams</span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-left">
+          <div class="pipe-node" style="background:#4a2d1e;color:#f0c070">06</div>
+          <div class="pipe-connector"></div>
+        </div>
+        <div class="pipe-body">
+          <p class="pipe-title">Response parsing + rendering</p>
+          <p class="pipe-detail"><code>ResponseParser</code> processes the raw token stream into structured message blocks. <code>flutter_markdown</code> renders the output with full markdown support — headers, code blocks, tables, bold, italic — with syntax highlighting applied on code fences.</p>
+          <span class="pipe-tech">flutter_markdown · ResponseParser</span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-left">
+          <div class="pipe-node" style="background:#3a3630;color:#d4c9b4">07</div>
+        </div>
+        <div class="pipe-body">
+          <p class="pipe-title">Persistence + history</p>
+          <p class="pipe-detail">Completed conversations are saved to a local SQLite database via Drift. Settings, model metadata, and download state are also persisted locally. Nothing is synced anywhere.</p>
+          <span class="pipe-tech">Drift · SQLite · SharedPreferences</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- 2. CODE ARCHITECTURE -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="code-arch">
+    <div class="section-marker">
+      <span class="section-num">02</span>
+      <div class="section-rule"></div>
+    </div>
+    <h2>Code architecture — how it's structured</h2>
+
+    <p>
+      The app follows a clean domain-driven architecture. The presentation layer never touches data sources directly — it goes through providers, which call services and repositories, which sit on top of the data layer. This keeps the codebase testable and the inference engine completely swappable.
+    </p>
+
+    <div class="arch-diagram">
+<span class="arch-comment">┌─────────────────────────────────────────────────────┐</span>
+<span class="arch-comment">│                   PRESENTATION                       │</span>
+<span class="arch-comment">│  Screens · Widgets · go_router · Riverpod providers  │</span>
+<span class="arch-comment">└────────────────────┬────────────────────────────────┘</span>
+                     <span class="arch-arrow">│ watches / reads</span>
+<span class="arch-comment">┌────────────────────▼────────────────────────────────┐</span>
+<span class="arch-comment">│                     DOMAIN                           │</span>
+<span class="arch-box">│  ModelInfo · AppSettings · AIPersonality             │</span>
+<span class="arch-box">│  Repositories (interfaces only — no impl here)       │</span>
+<span class="arch-comment">└──────────────┬──────────────────────┬───────────────┘</span>
+               <span class="arch-arrow">│ implements           │ calls</span>
+<span class="arch-comment">┌──────────────▼──────┐  ┌───────────▼──────────────┐</span>
+<span class="arch-comment">│     DATA SOURCES    │  │       SERVICES            │</span>
+<span class="arch-box">│  LLMService         │  │  TTSService               │</span>
+<span class="arch-box">│  HuggingFaceService │  │  VoiceInputService        │</span>
+<span class="arch-box">│  LlamaCppEngine     │  │  NotificationService      │</span>
+<span class="arch-box">│  DownloadManager    │  │  SystemMonitorService     │</span>
+<span class="arch-comment">└──────────────┬──────┘  └───────────────────────────┘</span>
+               <span class="arch-arrow">│ reads/writes</span>
+<span class="arch-comment">┌──────────────▼──────────────────────────────────────┐</span>
+<span class="arch-comment">│                   PERSISTENCE                        │</span>
+<span class="arch-box">│  Drift/SQLite · SharedPreferences · SecureStorage    │</span>
+<span class="arch-comment">│  /proc/meminfo · /proc/stat · GGUF files on disk     │</span>
+<span class="arch-comment">└─────────────────────────────────────────────────────┘</span>
+    </div>
+
+    <h3>LLMService — the orchestration core</h3>
+    <p>
+      <code>LLMService</code> is the master orchestrator. It owns the inference lifecycle — loading, prompting, streaming, and unloading. All other parts of the app talk to this service, never to llama.cpp directly.
+    </p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Dart</span>
+        <span class="code-title">LLMService — simplified inference flow</span>
+      </div>
+      <pre><span class="kw">class</span> <span class="nm">LLMService</span> {
+  <span class="nm">LlamaCppEngine</span>? _engine;
+  <span class="nm">ModelRuntime</span> _runtime = <span class="nm">ModelRuntime</span>.auto;
+
+  <span class="cm">// Detects best GPU backend for the loaded model</span>
+  <span class="kw">Future</span>&lt;<span class="nm">ModelRuntime</span>&gt; <span class="fn">detectRuntime</span>(<span class="nm">ModelInfo</span> model) <span class="kw">async</span> {
+    <span class="kw">final</span> backends = <span class="kw">await</span> <span class="nm">VulkanDetector</span>.<span class="fn">getAvailable</span>();
+    <span class="kw">if</span> (backends.<span class="fn">contains</span>(<span class="st">'vulkan'</span>)) <span class="kw">return</span> <span class="nm">ModelRuntime</span>.llamaCppVulkan;
+    <span class="kw">if</span> (backends.<span class="fn">contains</span>(<span class="st">'opencl'</span>)) <span class="kw">return</span> <span class="nm">ModelRuntime</span>.llamaCppOpenCL;
+    <span class="kw">return</span> <span class="nm">ModelRuntime</span>.llamaCpp; <span class="cm">// CPU fallback</span>
+  }
+
+  <span class="cm">// Streams tokens to the caller via callback</span>
+  <span class="kw">Future</span>&lt;<span class="kw">void</span>&gt; <span class="fn">generateStream</span>({
+    <span class="kw">required</span> <span class="nm">String</span> prompt,
+    <span class="kw">required</span> <span class="nm">AppSettings</span> settings,
+    <span class="kw">required</span> <span class="nm">Function</span>(<span class="nm">String</span>) <span class="fn">onToken</span>,
+    <span class="nm">Function</span>? <span class="fn">onComplete</span>,
+  }) <span class="kw">async</span> {
+    <span class="kw">final</span> formatted = <span class="nm">PromptTemplateService</span>.<span class="fn">format</span>(
+      prompt, _activeModel!.architecture
+    );
+    <span class="kw">await</span> _engine!.<span class="fn">generate</span>(
+      prompt: formatted,
+      temperature: settings.temperature,
+      topP: settings.topP,
+      topK: settings.topK,
+      maxTokens: settings.maxTokens,
+      tokenCallback: <span class="fn">onToken</span>,
+    );
+    <span class="fn">onComplete</span>?.call();
+  }
+}</pre>
+    </div>
+
+    <h3>State management with Riverpod</h3>
+    <p>
+      The entire UI state is managed through Riverpod providers. The key insight is that the inference state — loading, generating, error — is a <strong>stream</strong>, not a future. Riverpod's <code>StreamProvider</code> handles this elegantly, giving the UI a reactive view of the token stream without any manual state wiring.
+    </p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Dart</span>
+        <span class="code-title">Riverpod provider — chat state</span>
+      </div>
+      <pre><span class="cm">// Code-generated provider (Riverpod @riverpod annotation)</span>
+<span class="op">@riverpod</span>
+<span class="kw">class</span> <span class="nm">ChatNotifier</span> <span class="kw">extends</span> _$<span class="nm">ChatNotifier</span> {
+  <span class="kw">final</span> _messages = &lt;<span class="nm">ChatMessage</span>[];
+
+  <span class="kw">Future</span>&lt;<span class="kw">void</span>&gt; <span class="fn">sendMessage</span>(<span class="nm">String</span> text) <span class="kw">async</span> {
+    _messages.<span class="fn">add</span>(<span class="nm">ChatMessage</span>.user(text));
+    state = <span class="nm">AsyncData</span>(_messages); <span class="cm">// triggers immediate UI rebuild</span>
+
+    <span class="kw">final</span> buffer = <span class="nm">StringBuffer</span>();
+    <span class="kw">final</span> llm = ref.<span class="fn">read</span>(llmServiceProvider);
+
+    <span class="kw">await</span> llm.<span class="fn">generateStream</span>(
+      prompt: text,
+      settings: ref.<span class="fn">read</span>(settingsProvider).requireValue,
+      onToken: (token) {
+        buffer.<span class="fn">write</span>(token);
+        <span class="cm">// Update last message in-place — each token triggers rebuild</span>
+        _messages.<span class="fn">last</span> = <span class="nm">ChatMessage</span>.assistant(buffer.<span class="fn">toString</span>());
+        state = <span class="nm">AsyncData</span>([..._messages]);
+      },
+    );
+  }
+}</pre>
+    </div>
+
+    <div class="callout callout-green">
+      <p class="callout-label">Why Riverpod over BLoC or Provider?</p>
+      <p>Riverpod's compile-time safety and code generation eliminate an entire class of runtime errors. For a project with this many async service dependencies (LLM engine, TTS, voice input, download manager), the <code>ref.watch</code> / <code>ref.read</code> pattern scales much cleaner than manual stream subscriptions or BLoC events.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- 3. GGUF INTERNALS -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="gguf">
+    <div class="section-marker">
+      <span class="section-num">03</span>
+      <div class="section-rule"></div>
+    </div>
+    <h2>How GGUF models work</h2>
+
+    <p>
+      GGUF (GPT-Generated Unified Format) is the file format that makes on-device inference practical. It's a self-contained binary format that packs model weights, architecture metadata, tokenizer vocabulary, and quantization parameters into a single file — no separate config files, no Python runtime needed.
+    </p>
+
+    <h3>What's inside a GGUF file</h3>
+    <p>
+      A GGUF file has a structured binary layout. The header section is small and fast to read — this is how <code>ModelMetadataExtractor</code> can show you model info without loading the full weights.
+    </p>
+
+    <div class="gguf-anatomy">
+      <div class="gguf-row gguf-header-row">
+        <div class="gguf-offset">Offset</div>
+        <div class="gguf-field"><div class="gguf-name">Section</div></div>
+        <div class="gguf-size">Size</div>
+      </div>
+      <div class="gguf-row">
+        <div class="gguf-offset">0x0000</div>
+        <div class="gguf-field">
+          <div class="gguf-name">Magic number</div>
+          <div class="gguf-desc"><code>GGUF</code> in ASCII — identifies the file format immediately</div>
+        </div>
+        <div class="gguf-size">4 bytes</div>
+      </div>
+      <div class="gguf-row">
+        <div class="gguf-offset">0x0004</div>
+        <div class="gguf-field">
+          <div class="gguf-name">Version</div>
+          <div class="gguf-desc">Format version (v1, v2, v3). BRAINY.AI supports all three</div>
+        </div>
+        <div class="gguf-size">4 bytes</div>
+      </div>
+      <div class="gguf-row">
+        <div class="gguf-offset">0x0008</div>
+        <div class="gguf-field">
+          <div class="gguf-name">Tensor count</div>
+          <div class="gguf-desc">How many weight tensors the model contains</div>
+        </div>
+        <div class="gguf-size">8 bytes</div>
+      </div>
+      <div class="gguf-row">
+        <div class="gguf-offset">0x0010</div>
+        <div class="gguf-field">
+          <div class="gguf-name">Metadata KV pairs</div>
+          <div class="gguf-desc">Architecture, context length, embedding dim, attention heads, tokenizer type, BOS/EOS token IDs, rope scaling, and more</div>
+        </div>
+        <div class="gguf-size">Variable</div>
+      </div>
+      <div class="gguf-row">
+        <div class="gguf-offset">variable</div>
+        <div class="gguf-field">
+          <div class="gguf-name">Tensor info block</div>
+          <div class="gguf-desc">Name, shape, type, and byte offset for each tensor — read to build a memory map before loading weights</div>
+        </div>
+        <div class="gguf-size">Variable</div>
+      </div>
+      <div class="gguf-row">
+        <div class="gguf-offset">aligned</div>
+        <div class="gguf-field">
+          <div class="gguf-name">Tensor data</div>
+          <div class="gguf-desc">The actual quantized weights — the bulk of the file. Aligned to 32-byte boundaries for efficient memory-mapped access</div>
+        </div>
+        <div class="gguf-size">~95% of file</div>
+      </div>
+    </div>
+
+    <h3>What quantization actually does</h3>
+    <p>
+      A standard LLM stores weights as 16-bit or 32-bit floating point numbers. Quantization reduces each weight to fewer bits — typically 4 bits (Q4) in BRAINY.AI's model catalog. Here's what that means in practice:
+    </p>
+
+    <div class="data-grid">
+      <div class="data-card">
+        <div class="data-card-label">Llama 3 8B — size comparison</div>
+        <div class="data-item"><span class="data-key">float32 (original)</span><span class="data-val">~32 GB</span></div>
+        <div class="data-item"><span class="data-key">float16 (half)</span><span class="data-val">~16 GB</span></div>
+        <div class="data-item"><span class="data-key">Q8 (8-bit quant)</span><span class="data-val">~8.5 GB</span></div>
+        <div class="data-item"><span class="data-key">Q4_K_M (4-bit)</span><span class="data-val">~4.5 GB</span></div>
+        <div class="data-item"><span class="data-key">Q2_K (2-bit)</span><span class="data-val">~2.9 GB</span></div>
+      </div>
+      <div class="data-card">
+        <div class="data-card-label">Quality vs. compression tradeoff</div>
+        <div class="data-item"><span class="data-key">float16 quality</span><span class="data-val">100% baseline</span></div>
+        <div class="data-item"><span class="data-key">Q8 quality</span><span class="data-val">~99.5%</span></div>
+        <div class="data-item"><span class="data-key">Q4_K_M quality</span><span class="data-val">~97–98%</span></div>
+        <div class="data-item"><span class="data-key">Q4_0 quality</span><span class="data-val">~95–96%</span></div>
+        <div class="data-item"><span class="data-key">Q2_K quality</span><span class="data-val">~88–92%</span></div>
+      </div>
+    </div>
+
+    <p>
+      The <strong>Q4_K_M</strong> variant is the sweet spot BRAINY.AI's catalog targets. The "K" means it uses a per-block quantization scheme (k-quants) that's significantly more accurate than naive Q4, and the "M" means medium block size — a balance between speed and accuracy. For most conversational tasks, Q4_K_M output is indistinguishable from float16.
+    </p>
+
+    <div class="callout callout-amber">
+      <p class="callout-label">Why memory-mapped access matters</p>
+      <p>GGUF's 32-byte alignment lets llama.cpp use <code>mmap()</code> to map the weight file directly into virtual address space. This means the OS loads only the tensor pages actually needed for each forward pass — dramatically reducing startup time and RAM overhead compared to loading the full model into heap memory.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- 4. INFERENCE ENGINE -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="inference">
+    <div class="section-marker">
+      <span class="section-num">04</span>
+      <div class="section-rule"></div>
+    </div>
+    <h2>How llama.cpp inference works on Android</h2>
+
+    <p>
+      llama.cpp compiles to native <code>.so</code> shared libraries via the Android NDK and CMake. BRAINY.AI uses the <code>llamadart</code> bindings to call into these libraries from Dart via FFI (Foreign Function Interface). This is the full chain:
+    </p>
+
+    <div class="arch-diagram">
+<span class="arch-comment">Dart (UI thread)            Native thread</span>
+<span class="arch-comment">────────────────            ─────────────────────────────────</span>
+<span class="arch-box">LLMService.generateStream()</span>
+    <span class="arch-arrow">│</span>
+    <span class="arch-arrow">│ Dart FFI call</span>
+    <span class="arch-arrow">▼</span>
+<span class="arch-box">llamadart bindings</span>          <span class="arch-box">libllama.so  (llama.cpp compiled)</span>
+    <span class="arch-arrow">│</span>                              <span class="arch-arrow">│</span>
+    <span class="arch-arrow">│ JNI bridge                   │ llama_eval() — one forward pass</span>
+    <span class="arch-arrow">│</span>                              <span class="arch-arrow">│</span>
+    <span class="arch-arrow">│</span>                              <span class="arch-arrow">▼</span>
+    <span class="arch-arrow">│</span>                    <span class="arch-box">Vulkan / OpenCL kernel dispatch</span>
+    <span class="arch-arrow">│</span>                              <span class="arch-arrow">│</span>
+    <span class="arch-arrow">│</span>                              <span class="arch-arrow">▼</span>
+    <span class="arch-arrow">│</span>                    <span class="arch-box">GPU: matrix multiply (GEMM)</span>
+    <span class="arch-arrow">│</span>                    <span class="arch-box">     attention scores</span>
+    <span class="arch-arrow">│</span>                    <span class="arch-box">     softmax + sampling</span>
+    <span class="arch-arrow">│</span>                              <span class="arch-arrow">│</span>
+    <span class="arch-arrow">│ token callback               │ returns token ID</span>
+    <span class="arch-arrow">◄──────────────────────────────┘</span>
+    <span class="arch-arrow">│</span>
+    <span class="arch-arrow">▼</span>
+<span class="arch-box">Dart: onToken(token) → UI rebuild</span>
+    </div>
+
+    <h3>The KV cache — why context matters</h3>
+    <p>
+      For each forward pass, the transformer computes attention over all previous tokens. Recomputing this from scratch every token would be prohibitively slow. The <strong>KV cache</strong> stores the key and value matrices from previous tokens so only the new token's attention needs to be computed. This is why context size directly impacts RAM usage — a larger context window means a larger KV cache.
+    </p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Formula</span>
+        <span class="code-title">KV cache RAM usage estimate</span>
+      </div>
+      <pre><span class="cm">// KV cache size (bytes) =</span>
+<span class="cm">//   2 (K and V)
+//   × n_layers
+//   × n_heads
+//   × head_dim
+//   × context_length
+//   × bytes_per_element</span>
+
+<span class="cm">// Example: Llama 3 8B, 2048 context, Q4</span>
+<span class="kw">kv_cache</span> = <span class="nm">2</span> × <span class="nm">32</span> × <span class="nm">32</span> × <span class="nm">128</span> × <span class="nm">2048</span> × <span class="nm">2</span> = <span class="st">~536 MB</span>
+
+<span class="cm">// Doubling context to 4096 doubles the KV cache:
+// 2 × 32 × 32 × 128 × 4096 × 2 = ~1 GB extra RAM</span></pre>
+    </div>
+
+    <p>
+      This is why BRAINY.AI's Low RAM Mode reduces the default context window — it directly cuts KV cache size. The <code>Aggressive Memory Saving</code> setting also forces garbage collection of the KV cache between generations to free memory for other processes.
+    </p>
+  </div>
+
+  <div class="ornament">· · ·</div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- 5. VOICE PIPELINE -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="voice">
+    <div class="section-marker">
+      <span class="section-num">05</span>
+      <div class="section-rule"></div>
+    </div>
+    <h2>How the voice pipeline works</h2>
+
+    <p>
+      BRAINY.AI has two voice-related features: <strong>voice input</strong> (speech-to-text for sending messages) and <strong>Live Mode</strong> (a hands-free continuous conversation loop). These are built on separate services that work together.
+    </p>
+
+    <h3>Standard voice input flow</h3>
+
+    <div class="voice-pipeline">
+      <div class="vp-stage active">
+        <span class="vp-icon">🎙</span>
+        <div class="vp-name">Microphone</div>
+        <div class="vp-tech">RECORD_AUDIO</div>
+      </div>
+      <div class="vp-arrow">→</div>
+      <div class="vp-stage">
+        <span class="vp-icon">📡</span>
+        <div class="vp-name">STT engine</div>
+        <div class="vp-tech">speech_to_text</div>
+      </div>
+      <div class="vp-arrow">→</div>
+      <div class="vp-stage">
+        <span class="vp-icon">📝</span>
+        <div class="vp-name">Partial results</div>
+        <div class="vp-tech">streaming transcript</div>
+      </div>
+      <div class="vp-arrow">→</div>
+      <div class="vp-stage">
+        <span class="vp-icon">✅</span>
+        <div class="vp-name">Final result</div>
+        <div class="vp-tech">onResult callback</div>
+      </div>
+      <div class="vp-arrow">→</div>
+      <div class="vp-stage active">
+        <span class="vp-icon">🤖</span>
+        <div class="vp-name">LLM inference</div>
+        <div class="vp-tech">LLMService</div>
+      </div>
+    </div>
+
+    <p>
+      The <code>speech_to_text</code> package uses Android's on-device speech recognition engine — no internet required. Partial results stream into the text field as you speak, so you see your words appear in real time. The final result fires when the engine detects a pause.
+    </p>
+
+    <h3>Live Mode — how continuous conversation works</h3>
+    <p>
+      Live Mode is the more complex feature. It implements a state machine that cycles through four states automatically:
+    </p>
+
+    <div class="arch-diagram">
+<span class="arch-comment">                    Live Mode State Machine</span>
+<span class="arch-comment">────────────────────────────────────────────────────</span>
+<span class="arch-box">     ┌──────────────────────────────────────────┐</span>
+<span class="arch-box">     │              IDLE                        │</span>
+<span class="arch-box">     │   Waiting for user to start speaking     │</span>
+<span class="arch-box">     └──────────────┬───────────────────────────┘</span>
+<span class="arch-arrow">                    │ audio level > threshold</span>
+<span class="arch-box">     ┌──────────────▼───────────────────────────┐</span>
+<span class="arch-box">     │            LISTENING                     │</span>
+<span class="arch-box">     │   Streaming STT, showing transcript      │</span>
+<span class="arch-box">     │   Visualizer: animated waveform          │</span>
+<span class="arch-box">     └──────────────┬───────────────────────────┘</span>
+<span class="arch-arrow">                    │ silence detected for 2.5s</span>
+<span class="arch-box">     ┌──────────────▼───────────────────────────┐</span>
+<span class="arch-box">     │            THINKING                      │</span>
+<span class="arch-box">     │   Prompt sent to LLMService              │</span>
+<span class="arch-box">     │   Visualizer: pulsing indicator          │</span>
+<span class="arch-box">     └──────────────┬───────────────────────────┘</span>
+<span class="arch-arrow">                    │ first token received</span>
+<span class="arch-box">     ┌──────────────▼───────────────────────────┐</span>
+<span class="arch-box">     │            SPEAKING                      │</span>
+<span class="arch-box">     │   TTS reads tokens as they arrive        │</span>
+<span class="arch-box">     │   Visualizer: TTS waveform animation     │</span>
+<span class="arch-box">     └──────────────┬───────────────────────────┘</span>
+<span class="arch-arrow">                    │ TTS complete → loop back</span>
+<span class="arch-box">     ┌──────────────▼───────────────────────────┐</span>
+<span class="arch-box">     │              IDLE                        │</span>
+<span class="arch-box">     └──────────────────────────────────────────┘</span>
+
+<span class="arch-comment">   Tap anywhere → interrupt AI mid-response → back to LISTENING</span>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Dart</span>
+        <span class="code-title">VoiceInputService — silence detection loop</span>
+      </div>
+      <pre><span class="kw">class</span> <span class="nm">VoiceInputService</span> {
+  <span class="kw">static const</span> _silenceThreshold = <span class="nm">Duration</span>(milliseconds: <span class="nm">2500</span>);
+  <span class="nm">DateTime</span>? _lastSoundAt;
+
+  <span class="kw">void</span> <span class="fn">_onSoundLevelChanged</span>(<span class="nm">double</span> level) {
+    <span class="kw">if</span> (level > <span class="nm">-40.0</span>) {
+      _lastSoundAt = <span class="nm">DateTime</span>.now(); <span class="cm">// reset silence timer</span>
+      <span class="kw">return</span>;
+    }
+    <span class="kw">final</span> silent = <span class="nm">DateTime</span>.now().<span class="fn">difference</span>(_lastSoundAt ?? <span class="nm">DateTime</span>.now());
+    <span class="kw">if</span> (silent > _silenceThreshold) {
+      <span class="fn">_autoSend</span>(); <span class="cm">// silence detected — send the accumulated transcript</span>
+    }
+  }
+
+  <span class="kw">Future</span>&lt;<span class="kw">void</span>&gt; <span class="fn">startListening</span>({
+    <span class="kw">required</span> <span class="nm">Function</span>(<span class="nm">String</span>) <span class="fn">onPartial</span>,
+    <span class="kw">required</span> <span class="nm">Function</span>(<span class="nm">String</span>) <span class="fn">onFinal</span>,
+  }) <span class="kw">async</span> {
+    <span class="kw">await</span> _stt.<span class="fn">listen</span>(
+      onResult: (result) => result.finalResult
+          ? <span class="fn">onFinal</span>(result.recognizedWords)
+          : <span class="fn">onPartial</span>(result.recognizedWords),
+      listenMode: <span class="nm">ListenMode</span>.dictation,
+      partialResults: <span class="kw">true</span>,
+      onSoundLevelChange: <span class="fn">_onSoundLevelChanged</span>,
+    );
+  }
+}</pre>
+    </div>
+
+    <h3>Text-to-speech — reading responses aloud</h3>
+    <p>
+      The <code>TTSService</code> wraps <code>flutter_tts</code> to read AI responses aloud as they stream in. In Live Mode, TTS is fed tokens as they arrive — it doesn't wait for the full response. This creates a natural spoken cadence rather than a long pause followed by rapid speech.
+    </p>
+
+    <div class="callout callout-blue">
+      <p class="callout-label">Technical challenge: TTS + streaming</p>
+      <p>Feeding tokens one-by-one to TTS sounds choppy. The solution is a <strong>sentence accumulator</strong> — the service buffers tokens until it detects a sentence boundary (period, question mark, exclamation), then queues the full sentence for TTS. This gives natural pacing while keeping latency low.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- 6. MODELS -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="models">
+    <div class="section-marker">
+      <span class="section-num">06</span>
+      <div class="section-rule"></div>
+    </div>
+    <h2>Supported models — full breakdown</h2>
+
+    <div class="data-grid">
+      <div class="data-card">
+        <div class="data-card-label">Text &amp; chat</div>
+        <div class="data-item"><span class="data-key">TinyLlama 1.1B</span><span class="data-val">600MB · 2GB RAM</span></div>
+        <div class="data-item"><span class="data-key">Phi-3 Mini 3.8B</span><span class="data-val">2GB · 4GB RAM</span></div>
+        <div class="data-item"><span class="data-key">Qwen2.5 1.5B</span><span class="data-val">1GB · 3GB RAM</span></div>
+        <div class="data-item"><span class="data-key">Llama 3 8B Q4</span><span class="data-val">4.5GB · 8GB RAM</span></div>
+        <div class="data-item"><span class="data-key">Mistral 7B Q4</span><span class="data-val">4GB · 8GB RAM</span></div>
+      </div>
+      <div class="data-card">
+        <div class="data-card-label">Code</div>
+        <div class="data-item"><span class="data-key">StarCoder2 3B</span><span class="data-val">2GB · 4GB RAM</span></div>
+        <div class="data-item"><span class="data-key">CodeQwen 1.5B</span><span class="data-val">1GB · 3GB RAM</span></div>
+        <div class="data-item"><span class="data-key">DeepSeek Coder 1.3B</span><span class="data-val">800MB · 2GB RAM</span></div>
+      </div>
+      <div class="data-card">
+        <div class="data-card-label">Math &amp; reasoning</div>
+        <div class="data-item"><span class="data-key">WizardMath 7B Q4</span><span class="data-val">4GB · 8GB RAM</span></div>
+        <div class="data-item"><span class="data-key">OpenChat 3.5 7B</span><span class="data-val">4GB · 8GB RAM</span></div>
+      </div>
+      <div class="data-card">
+        <div class="data-card-label">Translation</div>
+        <div class="data-item"><span class="data-key">MADLAD-400 3B</span><span class="data-val">2GB · 4GB RAM · 100+ langs</span></div>
+        <div class="data-item"><span class="data-key">NLLB-200 3B</span><span class="data-val">2GB · 4GB RAM · Meta</span></div>
+      </div>
+    </div>
+
+    <h4>RAM requirements visual</h4>
+    <div class="ram-chart">
+      <div class="ram-row"><span class="ram-label">TinyLlama 1.1B</span><div class="ram-bar-bg"><div class="ram-bar" style="width:22%;background:#1D9E75"></div></div><span class="ram-val">2 GB</span></div>
+      <div class="ram-row"><span class="ram-label">Qwen2.5 / CodeQwen</span><div class="ram-bar-bg"><div class="ram-bar" style="width:33%;background:#2d7a45"></div></div><span class="ram-val">3 GB</span></div>
+      <div class="ram-row"><span class="ram-label">Phi-3 / StarCoder2</span><div class="ram-bar-bg"><div class="ram-bar" style="width:44%;background:#3a7d5e"></div></div><span class="ram-val">4 GB</span></div>
+      <div class="ram-row"><span class="ram-label">MADLAD / NLLB 3B</span><div class="ram-bar-bg"><div class="ram-bar" style="width:44%;background:#3a7d5e"></div></div><span class="ram-val">4 GB</span></div>
+      <div class="ram-row"><span class="ram-label">Mistral / WizardMath 7B</span><div class="ram-bar-bg"><div class="ram-bar" style="width:77%;background:#b5482a"></div></div><span class="ram-val">8 GB</span></div>
+      <div class="ram-row"><span class="ram-label">Llama 3 8B Q4</span><div class="ram-bar-bg"><div class="ram-bar" style="width:77%;background:#a03820"></div></div><span class="ram-val">8 GB</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- 7. CAPABILITIES -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="capabilities">
+    <div class="section-marker">
+      <span class="section-num">07</span>
+      <div class="section-rule"></div>
+    </div>
+    <h2>Full capabilities breakdown</h2>
+
+    <table class="cap-table">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Status</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Streaming text generation</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>Token-by-token, real-time</td>
+        </tr>
+        <tr>
+          <td><strong>Markdown rendering</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>Headers, lists, tables, bold, italic, code</td>
+        </tr>
+        <tr>
+          <td><strong>Syntax highlighting</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>Language auto-detection + copy button</td>
+        </tr>
+        <tr>
+          <td><strong>Voice input (STT)</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>On-device, partial results, no internet</td>
+        </tr>
+        <tr>
+          <td><strong>Text-to-speech</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>Configurable pitch, speed, language</td>
+        </tr>
+        <tr>
+          <td><strong>Live voice mode</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>Continuous loop, auto silence detection</td>
+        </tr>
+        <tr>
+          <td><strong>Image input</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>JPEG, PNG — attach in chat</td>
+        </tr>
+        <tr>
+          <td><strong>PDF / document input</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>PDF, TXT, MD, CSV, DOCX</td>
+        </tr>
+        <tr>
+          <td><strong>Image processing</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>Filters, wallpaper set, gallery save</td>
+        </tr>
+        <tr>
+          <td><strong>Image generation</strong></td>
+          <td class="cap-partial">Cloud only</td>
+          <td>FLUX.1 / SD3 via HF API — opt-in</td>
+        </tr>
+        <tr>
+          <td><strong>GPU acceleration</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>Vulkan, OpenCL, NPU — auto-detected</td>
+        </tr>
+        <tr>
+          <td><strong>Custom model import</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>Any GGUF file from device storage</td>
+        </tr>
+        <tr>
+          <td><strong>HF model download</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>Search, download, pause/resume</td>
+        </tr>
+        <tr>
+          <td><strong>Biometric lock</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>Face ID / Fingerprint on launch</td>
+        </tr>
+        <tr>
+          <td><strong>Chat history</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>Local SQLite, save/purge</td>
+        </tr>
+        <tr>
+          <td><strong>Performance benchmarks</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>Tokens/sec, prefill latency, device tier</td>
+        </tr>
+        <tr>
+          <td><strong>RAM / CPU monitor</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>Real-time via /proc/meminfo + /proc/stat</td>
+        </tr>
+        <tr>
+          <td><strong>AI personalities</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>4 presets + fully custom with sliders</td>
+        </tr>
+        <tr>
+          <td><strong>Multi-language (translation)</strong></td>
+          <td class="cap-yes">Full</td>
+          <td>100+ languages via MADLAD / NLLB</td>
+        </tr>
+        <tr>
+          <td><strong>RAG / document memory</strong></td>
+          <td class="cap-no">Planned</td>
+          <td>On roadmap</td>
+        </tr>
+        <tr>
+          <td><strong>Fine-tuning / LoRA</strong></td>
+          <td class="cap-no">Planned</td>
+          <td>On roadmap</td>
+        </tr>
+        <tr>
+          <td><strong>iOS / desktop</strong></td>
+          <td class="cap-no">Planned</td>
+          <td>Metal backend in progress</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- 8. USE CASES -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="usecases">
+    <div class="section-marker">
+      <span class="section-num">08</span>
+      <div class="section-rule"></div>
+    </div>
+    <h2>Real-world use cases</h2>
+
+    <p>
+      The "offline AI" pitch sounds technical. Here's what people are actually using it for — the use cases that make the privacy tradeoff matter.
+    </p>
+
+    <div class="usecases-grid">
+      <div class="uc-card">
+        <div class="uc-icon" style="background:#e8f5ee">💊</div>
+        <div class="uc-title">Health &amp; medical queries</div>
+        <p class="uc-desc">Asking about symptoms, medications, or mental health without sending sensitive data to any server. Completely private, no retention.</p>
+      </div>
+      <div class="uc-card">
+        <div class="uc-icon" style="background:#e3edf7">📓</div>
+        <div class="uc-title">Private journaling</div>
+        <p class="uc-desc">Using the AI as a journaling assistant or reflection partner. Diary entries never leave the device.</p>
+      </div>
+      <div class="uc-card">
+        <div class="uc-icon" style="background:#fdf3dc">💻</div>
+        <div class="uc-title">Offline coding help</div>
+        <p class="uc-desc">Code review, explanation, and generation on planes, in basements, or anywhere without internet. StarCoder2 and CodeQwen handle most tasks.</p>
+      </div>
+      <div class="uc-card">
+        <div class="uc-icon" style="background:#fce8e8">🏢</div>
+        <div class="uc-title">Enterprise / sensitive work</div>
+        <p class="uc-desc">Drafting documents, summarising meeting notes, or brainstorming when company policy prohibits sending data to cloud AI services.</p>
+      </div>
+      <div class="uc-card">
+        <div class="uc-icon" style="background:#e8f5ee">🌍</div>
+        <div class="uc-title">Translation without connectivity</div>
+        <p class="uc-desc">100+ language translation via MADLAD-400 and NLLB-200. Works in areas with no signal — travel, fieldwork, remote locations.</p>
+      </div>
+      <div class="uc-card">
+        <div class="uc-icon" style="background:#e3edf7">📚</div>
+        <div class="uc-title">Study &amp; learning</div>
+        <p class="uc-desc">Explaining concepts, solving maths problems (WizardMath), quizzing on material. Runs during lectures where internet use is restricted.</p>
+      </div>
+      <div class="uc-card">
+        <div class="uc-icon" style="background:#fdf3dc">✍️</div>
+        <div class="uc-title">Creative writing</div>
+        <p class="uc-desc">Story generation, worldbuilding, character dialogue. Mistral 7B in creative personality mode handles long-form creative work well.</p>
+      </div>
+      <div class="uc-card">
+        <div class="uc-icon" style="background:#fce8e8">🔒</div>
+        <div class="uc-title">High-security environments</div>
+        <p class="uc-desc">Government, defence, and healthcare contexts where cloud AI is simply not permitted. The app makes zero network requests in offline mode.</p>
+      </div>
+      <div class="uc-card">
+        <div class="uc-icon" style="background:#e8f5ee">🎙️</div>
+        <div class="uc-title">Voice assistant replacement</div>
+        <p class="uc-desc">Live Mode as an always-available private voice assistant — without sending your voice to Amazon, Google, or Apple.</p>
+      </div>
+    </div>
+
+    <div class="pull-quote">"The use cases that matter most are the ones where people can't or won't use cloud AI — health, legal, personal, enterprise. That's the gap this fills."</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- 9. PERFORMANCE -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="performance">
+    <div class="section-marker">
+      <span class="section-num">09</span>
+      <div class="section-rule"></div>
+    </div>
+    <h2>Performance — what to expect by device</h2>
+
+    <div class="perf-row">
+      <div class="perf-card" style="background:#e8f5ee">
+        <div class="perf-tier" style="color:#1e4d2b">Excellent</div>
+        <div class="perf-speed" style="color:#1e4d2b">50+</div>
+        <div class="perf-unit" style="color:#2d7a45">tokens/sec</div>
+      </div>
+      <div class="perf-card" style="background:#eef7f2">
+        <div class="perf-tier" style="color:#2d7a45">Very good</div>
+        <div class="perf-speed" style="color:#2d7a45">30–50</div>
+        <div class="perf-unit" style="color:#3a7d5e">tokens/sec</div>
+      </div>
+      <div class="perf-card" style="background:#fdf6e3">
+        <div class="perf-tier" style="color:#9a7010">Good</div>
+        <div class="perf-speed" style="color:#9a7010">20–30</div>
+        <div class="perf-unit" style="color:#b08020">tokens/sec</div>
+      </div>
+      <div class="perf-card" style="background:#fdf0e7">
+        <div class="perf-tier" style="color:#a04020">Fair</div>
+        <div class="perf-speed" style="color:#a04020">10–20</div>
+        <div class="perf-unit" style="color:#b05030">tokens/sec</div>
+      </div>
+      <div class="perf-card" style="background:#fce8e8">
+        <div class="perf-tier" style="color:#8b2020">Slow</div>
+        <div class="perf-speed" style="color:#8b2020">&lt;10</div>
+        <div class="perf-unit" style="color:#a03030">tokens/sec</div>
+      </div>
+    </div>
+
+    <table class="stack-table">
+      <thead>
+        <tr><th>Device / Chipset</th><th>Expected tier</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Snapdragon 8 Gen 3</td><td>Excellent — Vulkan backend, 50+ t/s</td></tr>
+        <tr><td>Google Tensor G4</td><td>Excellent — NPU acceleration</td></tr>
+        <tr><td>Snapdragon 8 Gen 2</td><td>Very Good — Vulkan, ~35–45 t/s</td></tr>
+        <tr><td>Dimensity 9200</td><td>Very Good — Vulkan, ~30–40 t/s</td></tr>
+        <tr><td>Snapdragon 7s Gen 2</td><td>Good — OpenCL, ~22–28 t/s</td></tr>
+        <tr><td>Snapdragon 4-series</td><td>Fair — CPU only, ~12–18 t/s</td></tr>
+        <tr><td>Budget CPU-only</td><td>Slow — &lt;10 t/s, smaller models recommended</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- 10. LIMITATIONS -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="limitations">
+    <div class="section-marker">
+      <span class="section-num">10</span>
+      <div class="section-rule"></div>
+    </div>
+    <h2>Honest limitations</h2>
+
+    <div class="limits">
+      <div class="limit-item">
+        <span class="limit-badge badge-hard">Hard limit</span>
+        <div>
+          <div class="limit-title">RAM is an absolute ceiling</div>
+          <p class="limit-desc">If the model + KV cache don't fit in available RAM, the load will fail. There's no graceful degradation. On a device with 6GB total RAM, you realistically have 3–4GB free for the model after OS and other apps. That rules out 7B models entirely on most mid-range devices.</p>
+        </div>
+      </div>
+      <div class="limit-item">
+        <span class="limit-badge badge-hard">Hard limit</span>
+        <div>
+          <div class="limit-title">Android 10+ only</div>
+          <p class="limit-desc">The NDK target, Vulkan API level requirements, and biometric API all require API 29+. No workaround planned — the performance APIs on older Android simply aren't there.</p>
+        </div>
+      </div>
+      <div class="limit-item">
+        <span class="limit-badge badge-friction">Friction</span>
+        <div>
+          <div class="limit-title">Significant speed variance between devices</div>
+          <p class="limit-desc">The gap between a Snapdragon 8 Gen 3 (50+ t/s) and a budget CPU-only device (8 t/s) is enormous. The same model produces a very different user experience on different hardware. Setting realistic expectations is hard to do in a generic UI.</p>
+        </div>
+      </div>
+      <div class="limit-item">
+        <span class="limit-badge badge-friction">Friction</span>
+        <div>
+          <div class="limit-title">Q4 quantization loses accuracy</div>
+          <p class="limit-desc">Especially noticeable on complex reasoning, multi-step maths, and factual recall. Q4_K_M mitigates this significantly vs Q4_0, but it's still not float16. For tasks where exact precision matters, the cloud fallback is worth using.</p>
+        </div>
+      </div>
+      <div class="limit-item">
+        <span class="limit-badge badge-friction">Friction</span>
+        <div>
+          <div class="limit-title">Battery drain and thermal throttling</div>
+          <p class="limit-desc">20–30 minutes of sustained inference will noticeably drain battery and cause modern Android thermal managers to throttle the GPU, reducing tokens/sec over time. The Terminate on Background setting helps — it unloads the model when you switch apps.</p>
+        </div>
+      </div>
+      <div class="limit-item">
+        <span class="limit-badge badge-minor">Minor</span>
+        <div>
+          <div class="limit-title">Voice input requires internet on some devices</div>
+          <p class="limit-desc">Android's speech recognition engine is on-device for most modern phones, but some manufacturers route STT through the cloud. There's no reliable way to detect or override this at the app level — it's a device/ROM decision.</p>
+        </div>
+      </div>
+      <div class="limit-item">
+        <span class="limit-badge badge-minor">Minor</span>
+        <div>
+          <div class="limit-title">No persistent memory across sessions</div>
+          <p class="limit-desc">Each new session starts with an empty context. There's no long-term memory or user profile — RAG support is planned to address this partially, but it's not live yet.</p>
+        </div>
+      </div>
+      <div class="limit-item">
+        <span class="limit-badge badge-roadmap">Roadmap</span>
+        <div>
+          <div class="limit-title">iOS, macOS, Windows — not yet</div>
+          <p class="limit-desc">The Flutter codebase is cross-platform. The blocker is the platform-specific llama.cpp native library compilation and permission models. iOS Metal backend is the next target.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ornament">· · ·</div>
+
+  <!-- ── TECH STACK ── -->
+  <div>
+    <div class="section-marker">
+      <span class="section-num">11</span>
+      <div class="section-rule"></div>
+    </div>
+    <h2>Full tech stack</h2>
+
+    <table class="stack-table">
+      <thead>
+        <tr><th>Layer</th><th>Technology &amp; notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Framework</td><td>Flutter 3.24+ / Dart 3.5+ — single codebase, Material Design 3</td></tr>
+        <tr><td>LLM engine</td><td>llamadart 0.6.9 (llama.cpp FFI bindings) — compiles libllama.so via NDK + CMake</td></tr>
+        <tr><td>GPU backends</td><td>Vulkan (Android) · OpenCL · NPU · Metal (iOS/macOS) · CUDA (Linux)</td></tr>
+        <tr><td>State management</td><td>Riverpod 2.6+ with code generation — compile-time safe providers</td></tr>
+        <tr><td>Navigation</td><td>go_router 14.8+ — ShellRoute with endDrawer navigation pattern</td></tr>
+        <tr><td>Local database</td><td>Drift 2.19+ (type-safe SQLite with code generation)</td></tr>
+        <tr><td>Secure storage</td><td>flutter_secure_storage 10.0+ — HF tokens, biometric flags</td></tr>
+        <tr><td>Biometrics</td><td>local_auth 2.3+ — Face ID / Fingerprint gate on launch</td></tr>
+        <tr><td>Voice input</td><td>speech_to_text 7.0+ — on-device STT, partial results, silence detection</td></tr>
+        <tr><td>Text-to-speech</td><td>flutter_tts 4.2+ — pitch, speed, language configurable</td></tr>
+        <tr><td>Networking</td><td>Dio 5.5+ — HF cloud inference only, interceptors, download manager</td></tr>
+        <tr><td>Markdown</td><td>flutter_markdown + syntax highlighting — renders LLM output</td></tr>
+        <tr><td>Image processing</td><td>image 4.3+ · photo_view · gal — filters, wallpaper, gallery save</td></tr>
+        <tr><td>Notifications</td><td>flutter_local_notifications 21.0+ — response alerts, system monitor bar</td></tr>
+        <tr><td>System monitor</td><td>Internal service — reads /proc/meminfo + /proc/stat every 10s</td></tr>
+        <tr><td>File handling</td><td>file_picker 8.3+ · path_provider 2.1+ — model import, doc attachments</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── CTA ── -->
+  <div class="cta">
+    <h2>It's open source — MIT licensed</h2>
+    <p>The full source is on GitHub. If you're building in the mobile AI / edge inference space, or just curious about the implementation, I'd love to connect.</p>
+    <a href="https://github.com/Deshan555/grammer_llm" class="cta-btn cta-solid">View source on GitHub</a>
+    <a href="#" class="cta-btn cta-ghost">Connect on LinkedIn</a>
+  </div>
+
+</div>
+</body>
+</html>
