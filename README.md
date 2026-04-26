@@ -19,6 +19,7 @@
 ## Table of Contents
 
 - [Overview](#overview)
+- [App Screenshots](#app-screenshots)
 - [Key Features](#key-features)
 - [LLM Architecture](#llm-architecture)
 - [Screens & Navigation](#screens--navigation)
@@ -53,6 +54,23 @@ Your conversations, files, and AI interactions never leave your device. No cloud
 | **Privacy First** | Messages, files, and history stored only in local encrypted storage |
 | **Hardware Accelerated** | Vulkan, Metal, OpenCL, and NPU backends for maximum performance |
 | **Premium UX** | Dark glassmorphism theme, particle effects, animated visualizers |
+
+---
+
+## App Screenshots
+
+<div align="center">
+  <img src="screenshots/app_1.png" width="200"/>
+  <img src="screenshots/app_2.png" width="200"/>
+  <img src="screenshots/app_3.png" width="200"/>
+  <img src="screenshots/app_4.png" width="200"/>
+  <img src="screenshots/app_5.png" width="200"/>
+  <img src="screenshots/app_6.png" width="200"/>
+  <img src="screenshots/app_7.png" width="200"/>
+  <img src="screenshots/app_8.png" width="200"/>
+  <img src="screenshots/app_9.png" width="200"/>
+  <img src="screenshots/app_10.png" width="200"/>
+</div>
 
 ---
 
