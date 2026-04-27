@@ -14,6 +14,8 @@
 
 </div>
 
+If You Want To Direct Import Models From Storage : (https://huggingface.co/models?library=gguf)
+
 ---
 
 ## Table of Contents
